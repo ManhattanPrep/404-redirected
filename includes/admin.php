@@ -1386,7 +1386,7 @@ function wbz404_adminRedirectsPage() {
 	
 			$cats = get_categories('hierarchical=0');
 			foreach ($cats as $cat) {
-				$id = $cat->id;
+				$id = $cat->term_id;
 				$theTitle = $cat->name;
 				$thisval = $id . "|CAT";
 				
@@ -1399,7 +1399,7 @@ function wbz404_adminRedirectsPage() {
 	
 			$tags = get_tags('hierarchical=0');
 			foreach ($tags as $tag) {
-				$id = $tag->id;
+				$id = $tag->term_id;
 				$theTitle = $tag->name;
 				$thisval = $id . "|TAG";
 				
@@ -1653,7 +1653,7 @@ function wbz404_adminEditPage() {
 	
 			$cats = get_categories('hierarchical=0');
 			foreach ($cats as $cat) {
-				$id = $cat->id;
+				$id = $cat->term_id;
 				$theTitle = $cat->name;
 				$thisval = $id . "|" . WBZ404_CAT;
 				
@@ -1666,7 +1666,7 @@ function wbz404_adminEditPage() {
 	
 			$tags = get_tags('hierarchical=0');
 			foreach ($tags as $tag) {
-				$id = $tag->id;
+				$id = $tag->term_id;
 				$theTitle = $tag->name;
 				$thisval = $id . "|" . WBZ404_TAG;
 				
