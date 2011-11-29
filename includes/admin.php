@@ -547,7 +547,7 @@ function wbz404_addAdminRedirect() {
 	if ($message == "") {
 		$type = "";
 		$dest = "";
-		if ($_POST['dest'] === "EXTERNAL") {
+		if ($_POST['dest'] == "EXTERNAL") {
 			$type = WBZ404_EXTERNAL;
 			$dest = $wpdb->escape($_POST['external']);
 		} else {
@@ -602,7 +602,7 @@ function wbz404_editRedirectData() {
 	if ($message == "") {
 		$type = "";
 		$dest = "";
-		if ($_POST['dest'] === WBZ404_EXTERNAL) {
+		if ($_POST['dest'] === "" . WBZ404_EXTERNAL) {
 			$type = WBZ404_EXTERNAL;
 			$dest = $wpdb->escape($_POST['external']);
 		} else {
