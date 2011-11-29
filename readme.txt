@@ -4,7 +4,7 @@ Donate link: http://www.weberz.com/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Tested up to: 3.2.1
-Stable tag: 1.0
+Stable tag: 1.1
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -61,11 +61,20 @@ Yes! 404 Redirected records the page/post ID number and looks up the most curren
 
 == Changelog == 
 
+= 1.1 = 2011-11-29
+
+* Fixed adding and editing of Tag & Category redirects
+* Fixed bug causing category redirects to incorrectly match external redirects
+
 = 1.0 = 2011-11-20
 
 * Initial Release
 
 == Upgrade Notice ==
+
+= 1.1 =
+
+2 bug fixes in adding/editing redirects
 
 = 1.0 =
 
