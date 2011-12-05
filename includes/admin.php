@@ -437,61 +437,68 @@ function wbz404_drawPaginationLinks($sub, $tableOptions) {
 		$total_pages = 1;
 	}
 
-	echo "<div class=\"tablenav\">";
-		echo "<div class=\"tablenav-pages\">";
-			echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . wbz404_trans('items') . "</span>";
-			echo "<span class=\"pagination-links\">";
-				$class = "";
+	echo "<div class=\"tablenav-pages\">";
+		echo "<span class=\"displaying-num\">" . $tableOptions['perpage'] . " " . wbz404_trans('items') . "</span>";
+		echo "<span class=\"pagination-links\">";
+			$class = "";
+			if ($tableOptions['paged'] == 1) {
+				$class=" disabled";
+			} 
+			$firsturl = $url;
+			echo "<a href=\"" . $firsturl . "\" class=\"first-page" . $class . "\" title=\"" . wbz404_trans('Go to first page') . "\">&laquo;</a>";
+			$class = "";
+			if ($tableOptions['paged'] == 1) {
+				$class=" disabled";
+				$prevurl = $url;
+			} else {
+				$prev = $tableOptions['paged'] -1;
+				$prevurl = $url . "&paged=" . $prev;
+			}
+			echo "<a href=\"" . $prevurl . "\" class=\"prev-page" . $class . "\" title=\"" . wbz404_trans('Go to previous page') . "\">&lsaquo;</a>";
+			echo " ";
+			echo wbz404_trans('Page') . " " . $tableOptions['paged'] . " " . wbz404_trans('of') . " " . $total_pages;
+			echo " ";
+			$class = "";
+			if ($tableOptions['paged'] + 1 > $total_pages) {
+				$class=" disabled";
 				if ($tableOptions['paged'] == 1) {
-					$class=" disabled";
-				} 
-				$firsturl = $url;
-				echo "<a href=\"" . $firsturl . "\" class=\"first-page" . $class . "\" title=\"" . wbz404_trans('Go to first page') . "\">&laquo;</a>";
-				$class = "";
+					$nexturl = $url;
+				} else {
+					$nexturl = $url . "&paged=" . $tableOptions['paged'];
+				}
+			} else {
+				$next = $tableOptions['paged'] + 1;
+				$nexturl = $url . "&paged=" . $next;
+			}
+			echo "<a href=\"" . $nexturl . "\" class=\"next-page" . $class . "\" title=\"" . wbz404_trans('Go to next page') . "\">&rsaquo;</a>";
+			$class = "";
+			if ($tableOptions['paged'] + 1 > $total_pages) {
+				$class=" disabled";
 				if ($tableOptions['paged'] == 1) {
-					$class=" disabled";
-					$prevurl = $url;
+					$lasturl = $url;
 				} else {
-					$prev = $tableOptions['paged'] -1;
-					$prevurl = $url . "&paged=" . $prev;
+					$lasturl = $url . "&paged=" . $tableOptions['paged'];
 				}
-				echo "<a href=\"" . $prevurl . "\" class=\"prev-page" . $class . "\" title=\"" . wbz404_trans('Go to previous page') . "\">&lsaquo;</a>";
-				echo " ";
-				echo wbz404_trans('Page') . " " . $tableOptions['paged'] . " " . wbz404_trans('of') . " " . $total_pages;
-				echo " ";
-				$class = "";
-				if ($tableOptions['paged'] + 1 > $total_pages) {
-					$class=" disabled";
-					if ($tableOptions['paged'] == 1) {
-						$nexturl = $url;
-					} else {
-						$nexturl = $url . "&paged=" . $tableOptions['paged'];
-					}
-				} else {
-					$next = $tableOptions['paged'] + 1;
-					$nexturl = $url . "&paged=" . $next;
-				}
-				echo "<a href=\"" . $nexturl . "\" class=\"next-page" . $class . "\" title=\"" . wbz404_trans('Go to next page') . "\">&rsaquo;</a>";
-				$class = "";
-				if ($tableOptions['paged'] + 1 > $total_pages) {
-					$class=" disabled";
-					if ($tableOptions['paged'] == 1) {
-						$lasturl = $url;
-					} else {
-						$lasturl = $url . "&paged=" . $tableOptions['paged'];
-					}
-				} else {
-					$lasturl = $url . "&paged=" . $total_pages;
-				}
-				echo "<a href=\"" . $lasturl . "\" class=\"last-page" . $class . "\" title=\"" . wbz404_trans('Go to last page') . "\">&raquo;</a>";
-			echo "</span>";
-		echo "</div>";
-	echo "</div>";	
+			} else {
+				$lasturl = $url . "&paged=" . $total_pages;
+			}
+			echo "<a href=\"" . $lasturl . "\" class=\"last-page" . $class . "\" title=\"" . wbz404_trans('Go to last page') . "\">&raquo;</a>";
+		echo "</span>";
+	echo "</div>";
 }
 
 function wbz404_buildTableColumns($sub, $tableOptions, $columns) {
 	echo "<tr>";
-		echo "<th style=\"width: 1px;\"></th>";
+		if ($sub == "captured" && $tableOptions['filter'] != '-1') {
+			$cbinfo = "class=\"manage-column column-cb check-column\"";
+		} else {
+			$cbinfo = "style=\"width: 1px;\"";
+		}
+		echo "<th " . $cbinfo . ">";
+			if ($sub == "captured" && $tableOptions['filter'] != '-1') {
+				echo "<input type=\"checkbox\">";
+			}
+		echo "</th>";
 		foreach ($columns as $column) {
 			$style = "";
 			if ($column['width'] != "") {
@@ -798,6 +805,48 @@ function wbz404_adminFooter() {
 	echo "</div>";
 }
 
+function wbz404_emptyTrash($sub) {
+	$tableOptions = wbz404_getTableOptions();
+
+	$rows = wbz404_getRecords($sub, $tableOptions);
+	foreach ($rows as $row) {
+		wbz404_cleanRedirect($row['id']);
+	}
+}
+
+function wbz404_bulkProcess($action, $ids) {
+	$message = "";
+	if ($action == "bulkignore" || $action == "bulkcaptured") {
+		if ($action == "bulkignore") {
+			$status = WBZ404_IGNORED;
+		} else {
+			$status = WBZ404_CAPTURED;
+		}
+		$count = 0;
+		foreach ($ids as $id) {
+			$s = wbz404_setIgnore($id, $status);
+			if ($s == "") {
+				$count++;
+			} 
+		}
+		if ($action == "bulkignore") {
+			$message = $count . " " . wbz404_trans('URLs marked as ignored.');
+		} else {
+			$message = $count . " " . wbz404_trans('URLs marked as captured.');
+		}
+	} else {
+		$count = 0;
+		foreach ($ids as $id) {
+			$s = wbz404_setTrash($id, 1);
+			if ($s == "") {
+				$count ++;
+			}
+		}
+		$message = $count . " " . wbz404_trans('URLs moved to trash');
+	}
+	return $message;
+}
+
 function wbz404_adminPage() {
 	$sub="";
 	$message="";
@@ -822,6 +871,20 @@ function wbz404_adminPage() {
 			} else {
 				$message .= wbz404_trans('Error: unable to add new redirect successfully.');
 			}
+		}
+	} else if ($action == "emptyRedirectTrash") {
+		if (check_admin_referer('wbz404_emptyRedirectTrash') && is_admin()) {
+			wbz404_emptyTrash('redirects');
+			$message = wbz404_trans('All trashed URLs have been deleted!');
+		}
+	} else if ($action == "emptyCapturedTrash") {
+		if (check_admin_referer('wbz404_emptyCapturedTrash') && is_admin()) {
+			wbz404_emptyTrash('captured');
+			$message = wbz404_trans('All trashed URLs have been deleted!');
+		}
+	} else if ($action == "bulkignore" || $action == "bulkcaptured" || $action == "bulktrash") {
+		if (check_admin_referer('wbz404_capturedBulkAction') && is_admin()) {
+			$message = wbz404_bulkProcess($action, $_POST['idnum']);
 		}
 	}
 
@@ -995,8 +1058,10 @@ function wbz404_adminLogsPage() {
 	$columns['timestamp']['orderby'] = "timestamp";
 	$columns['timestamp']['width'] = "15%";
 
+	echo "<div class=\"tablenav\">";
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+	echo "</div>";
 
-	wbz404_drawPaginationLinks($sub, $tableOptions);
 	echo "<table class=\"wp-list-table widefat fixed\">";
 		echo "<thead>";
 			wbz404_buildTableColumns($sub, $tableOptions, $columns);
@@ -1051,7 +1116,10 @@ function wbz404_adminLogsPage() {
 		}
 		echo "</tbody>";
 	echo "</table>";
-	wbz404_drawPaginationLinks($sub, $tableOptions);
+	
+	echo "<div class=\"tablenav\">";
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+	echo "</div>";
 
 }
 
@@ -1205,7 +1273,6 @@ function wbz404_adminRedirectsPage() {
 	$tableOptions = wbz404_getTableOptions();
 
 	wbz404_drawFilters($sub, $tableOptions);
-	wbz404_drawPaginationLinks($sub, $tableOptions);
 
 	$columns['url']['title'] = "URL";
 	$columns['url']['orderby'] = "url";
@@ -1232,7 +1299,25 @@ function wbz404_adminRedirectsPage() {
 	$columns['last_used']['orderby'] = "";
 	$columns['last_used']['width'] = "10%";
 
-	date_default_timezone_set(get_option('timezone_string'));  
+	date_default_timezone_set(get_option('timezone_string'));
+
+	echo "<div class=\"tablenav\">";
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+
+		if ($tableOptions['filter'] == '-1') {
+			echo "<div class=\"alignleft actions\">";
+				$eturl = "?page=wbz404_redirected&filter=-1";
+                                $trashaction = "wbz404_emptyRedirectTrash";
+                                $eturl = wp_nonce_url($eturl, $trashaction);
+
+				echo "<form method=\"POST\" action=\"" . $eturl . "\">";
+				echo "<input type=\"hidden\" name=\"action\" value=\"emptyRedirectTrash\">";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Empty Trash') . "\">";
+				echo "</form>";
+			echo "</div>";		
+		}
+	echo "</div>";
+
 	echo "<table class=\"wp-list-table widefat fixed\">";
 		echo "<thead>";
 			wbz404_buildTableColumns($sub, $tableOptions, $columns);
@@ -1366,7 +1451,10 @@ function wbz404_adminRedirectsPage() {
 			}
 		echo "</tbody>";
 	echo "</table>";
-	wbz404_drawPaginationLinks($sub, $tableOptions);
+
+	echo "<div class=\"tablenav\">";
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+	echo "</div>";
 
 	if ($tableOptions['filter'] != -1) {
 		echo "<h3>" . wbz404_trans('Add Manual Redirect') . "</h3>";
@@ -1492,7 +1580,6 @@ function wbz404_adminCapturedPage() {
 	$tableOptions = wbz404_getTableOptions();
 
 	wbz404_drawFilters($sub, $tableOptions);
-	wbz404_drawPaginationLinks($sub, $tableOptions);
 
 	$columns['url']['title'] = "URL";
 	$columns['url']['orderby'] = "url";
@@ -1508,6 +1595,49 @@ function wbz404_adminCapturedPage() {
 	$columns['last_used']['width'] = "20%";
 
 	date_default_timezone_set(get_option('timezone_string'));  
+
+
+	echo "<div class=\"tablenav\">";
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+
+		if ($tableOptions['filter'] == '-1') {
+			echo "<div class=\"alignleft actions\">";
+				$eturl = "?page=wbz404_redirected&subpage=wbz404_captured&filter=-1";
+                                $trashaction = "wbz404_emptyCapturedTrash";
+                                $eturl = wp_nonce_url($eturl, $trashaction);
+
+				echo "<form method=\"POST\" action=\"" . $eturl . "\">";
+				echo "<input type=\"hidden\" name=\"action\" value=\"emptyCapturedTrash\">";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Empty Trash') . "\">";
+				echo "</form>";
+			echo "</div>";		
+		} else {
+			echo "<div class=\"alignleft actions\">";
+				$url = "?page=wbz404_redirected&subpage=wbz404_captured";
+				if ($tableOptions['filter'] != 0) {
+					$url .= "&filter=" . $tableOptions['filter'];
+				}
+				if (!($tableOptions['orderby'] == "url" && $tableOptions['order'] == "ASC")) {
+					$url .= "&orderby=" . $tableOptions['orderby'] . "&order=" . $tableOptions['order'];
+				}
+
+                                $bulkaction = "wbz404_capturedBulkAction";
+                                $url = wp_nonce_url($url, $bulkaction);
+
+				echo "<form method=\"POST\" action=\"" . $url . "\">";
+				echo "<select name=\"action\">";
+					if ($tableOptions['filter'] != WBZ404_IGNORED) {
+						echo "<option value=\"bulkignore\">" . wbz404_trans('Mark as ignored') . "</option>";
+					} else {
+						echo "<option value=\"bulkcaptured\">" . wbz404_trans('Mark as captured') . "</option>";
+					}
+					echo "<option value=\"bulktrash\">" . wbz404_trans('Trash') . "</option>";
+				echo "</select>";
+				echo "<input type=\"submit\" class=\"button-secondary\" value=\"" . wbz404_trans('Apply') . "\">";
+			echo "</div>";
+		}
+	echo "</div>";
+	
 	echo "<table class=\"wp-list-table widefat fixed\">";
 		echo "<thead>";
 			wbz404_buildTableColumns($sub, $tableOptions, $columns);
@@ -1583,7 +1713,11 @@ function wbz404_adminCapturedPage() {
 	                        }
 
 				echo "<tr id=\"post-" . $row['id'] . "\"" . $class . ">";
-					echo "<td></td>";
+					echo "<th class=\"check-column\">";
+						if ($tableOptions['filter'] != '-1') {
+							echo "<input type=\"checkbox\" name=\"idnum[]\" value=\"" . $row['id'] . "\">";
+						}
+					echo "</th>";
 					echo "<td>";
 						echo "<strong><a href=\"" . $editlink . "\" title=\"" . wbz404_trans('Edit Redirect Details') . "\">" . $row['url'] . "</a></strong>";
 						echo "<div class=\"row-actions\">";
@@ -1618,7 +1752,13 @@ function wbz404_adminCapturedPage() {
 			}
 		echo "</tbody>";
 	echo "</table>";
-	wbz404_drawPaginationLinks($sub, $tableOptions);
+	
+	echo "<div class=\"tablenav\">";
+		if ($tableOptions['filter'] != '-1') {
+			echo "</form>";
+		}
+		wbz404_drawPaginationLinks($sub, $tableOptions);
+	echo "</div>";
 }
 
 function wbz404_adminEditPage() {
