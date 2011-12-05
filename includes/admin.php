@@ -5,18 +5,58 @@
 */
 
 function wbz404_addAdminPage() {
+	global $menu;
         if (function_exists('add_options_page')) {
-                add_options_page('404 Redirected', '404 Redirected', 'manage_options', 'wbz404_redirected', 'wbz404_adminPage');
+		$options = wbz404_getOptions();
+		$pageName = "404 Redirected";
+		if ($options['admin_notification'] != '0') {
+			$captured = wbz404_capturedCount();
+			if ($captured >= $options['admin_notification']) {
+				$pageName .= " <span class='update-plugins count-1'><span class='update-count'>" . $captured . "</span></span>";
+				$pos = strpos($menu[80][0], 'update-plugins');
+				if ($pos === false) {
+					$menu[80][0] = $menu[80][0] . " <span class='update-plugins count-1'><span class='update-count'>1</span></span>"; 
+				}
+			}
+		}
+                add_options_page('404 Redirected', $pageName, 'manage_options', 'wbz404_redirected', 'wbz404_adminPage');
         }
 }
 
 add_action('admin_menu', 'wbz404_addAdminPage');
+
+function wbz404_dashboardNotification() {
+	global $pagenow;
+	if ( current_user_can('manage_options') ) {
+		if ((isset($_GET['page']) && $_GET['page'] == "wbz404_redirected") || ( $pagenow == 'index.php' && (!(isset($_GET['page']))))) {
+			$options = wbz404_getOptions();
+			if ($options['admin_notification'] != '0') {
+				$captured = wbz404_capturedCount();
+				if ($captured >= $options['admin_notification']) {
+					echo "<div class=\"updated\"><p><strong>" . wbz404_trans('404 Redirected') . ":</strong> " . wbz404_trans('There are ' . $captured . ' captured 404 URLs that need to be processed.') . "</p></div>";
+				}
+			}
+		}
+	}
+}
+
+add_action('admin_notices', 'wbz404_dashboardNotification' );
 
 function wbz404_postbox($id, $title, $content) {
 	echo "<div id=\"" . $id . "\" class=\"postbox\">";
 		echo "<h3 class=\"hndle\" style=\"cursor: default;\"><span>" . $title . "</span></h3>";
 		echo "<div class=\"inside\">" . $content . "</div>";
 	echo "</div>";
+}
+
+function wbz404_capturedCount() {
+	global $wpdb;
+	$query="select count(id) from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_CAPTURED);
+	$captured = $wpdb->get_col($query, 0);
+	if (count($captured) == 0) {
+		$captured[0] = 0;
+	}
+	return $captured[0];
 }
 
 function wbz404_updateOptions() {
@@ -32,6 +72,10 @@ function wbz404_updateOptions() {
 		$options['capture_404'] = '1';
 	} else {
 		$options['capture_404'] = '0';
+	}
+
+	if (preg_match('/^[0-9]+$/', $_POST['admin_notification']) == 1) {
+		$options['admin_notification'] = $_POST['admin_notification'];
 	}
 
 	if (preg_match('/^[0-9]+$/', $_POST['capture_deletion'])==1 && $_POST['capture_deletion'] >= 0) {
@@ -716,7 +760,8 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
 	echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('Plugin Home Page') . "\" target=\"_blank\">" . wbz404_trans('Plugin Home Page') . "</a> | ";
 	echo "<a href=\"http://twitter.com/Weberz\" title=\"Weberz Hosting on Twitter\" target=\"_blank\">Weberz on Twitter</a> | ";
 	echo "<a href=\"http://www.facebook.com/Weberz\" title=\"Weberz Hosting on Facebook\" target=\"_blank\">Weberz on Facebook</a><br>";
-	echo "<br>";	
+	echo "<br>";
+	
 	$class="";
 	if ($sub == "redirects") {
 		$class="nav-tab-active";
@@ -1045,6 +1090,9 @@ function wbz404_adminOptionsPage() {
 					$selected = " checked";
 				}
 				$content .= "<p>" . wbz404_trans('Collect incoming 404 URLs') . ": <input type=\"checkbox\" name=\"capture_404\" value=\"1\"" . $selected . "></p>";
+
+				$content .= "<p>" . wbz404_trans('Admin notification level') . ": <input type=\"text\" name=\"admin_notification\" value=\"" . $options['admin_notification'] . "\" style=\"width: 50px;\"> " . wbz404_trans('Captured URLs (0 Disables Notification)') . "<br>";
+				$content .= wbz404_trans('Display WordPress admin notifications when number of captured URLs goes above specified level') . "</p>";
 
 				$content .= "<p>" . wbz404_trans('Collected 404 URL deletion') . ": <input type=\"text\" name=\"capture_deletion\" value=\"" . $options['capture_deletion'] . "\" style=\"width: 50px;\"> " . wbz404_trans('Days (0 Disables Auto Delete)') . "<br>";
 				$content .= wbz404_trans('Automatically removes 404 URLs that have been captured if they haven\'t been used for the specified amount of time.') . "</p>";

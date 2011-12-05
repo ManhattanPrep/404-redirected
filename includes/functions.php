@@ -47,6 +47,7 @@ function wbz404_getDefaultOptions() {
 		'capture_404' => '1',
 		'capture_deletion' => 1095,
 		'manual_deletion' => '0',
+		'admin_notification' => '200',
 		'remove_matches' => '1',
 		'display_suggest' => '1',
 		'suggest_minscore' => '25',
