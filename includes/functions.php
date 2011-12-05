@@ -59,13 +59,13 @@ function wbz404_getDefaultOptions() {
 		'suggest_noresults' => '<p>No Results To Display.</p>',
 		'suggest_cats' => '1',
 		'suggest_tags' => '1',
-		'auto_redirects' => '0',
+		'auto_redirects' => '1',
 		'auto_score' => '90',
 		'auto_deletion' => '1095',
 		'auto_cats' => '1',
 		'auto_tags' => '1',
 		'force_permalinks' => '1',
-		'404_promote' => '0'
+		'404_promote' => '1'
 	);
 	return $options;
 }
