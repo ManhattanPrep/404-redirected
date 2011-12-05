@@ -282,7 +282,7 @@ function wbz404_getLogsCount($id) {
 	return $records;
 }
 
-function wbz404_getRecords($sub, $tableOptions) {
+function wbz404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
 	global $wpdb;
 	$rows = array();
 
@@ -305,8 +305,11 @@ function wbz404_getRecords($sub, $tableOptions) {
 	}
 
 	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
-	$start = ($tableOptions['paged'] - 1) * $tableOptions['perpage'];
-	$query .= "limit " . $start . ", " . $tableOptions['perpage'];
+	
+	if ($limitEnforced == 1) {
+		$start = ($tableOptions['paged'] - 1) * $tableOptions['perpage'];
+		$query .= "limit " . $start . ", " . $tableOptions['perpage'];
+	}
 
 	$rows = $wpdb->get_results($query, ARRAY_A);
 	return $rows;
@@ -808,7 +811,7 @@ function wbz404_adminFooter() {
 function wbz404_emptyTrash($sub) {
 	$tableOptions = wbz404_getTableOptions();
 
-	$rows = wbz404_getRecords($sub, $tableOptions);
+	$rows = wbz404_getRecords($sub, $tableOptions, 0);
 	foreach ($rows as $row) {
 		wbz404_cleanRedirect($row['id']);
 	}
