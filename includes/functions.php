@@ -119,11 +119,13 @@ function wbz404_pluginActivation() {
 
 	$now = time();
 	wp_schedule_event($now + 86400, 'daily', 'wbz404_cleaningCron');
+	wp_schedule_event($now + 3600, 'hourly', 'wbz404_removeDuplicatesCron');
 }
 
 function wbz404_pluginRemove() {
 	delete_option('wbz404_settings');
 	wp_clear_scheduled_hook('wbz404_cleaningCron');
+	wp_clear_scheduled_hook('wbz404_removeDuplicatesCron');
 }
 
 function wbz404_rankPermalinks($url, $includeCats = '1', $includeTags = '1') {
@@ -358,6 +360,34 @@ function wbz404_cleaningCron() {
 			wbz404_cleanRedirect($row['id']);
 		}
 	}
+}
+
+function wbz404_removeDuplicatesCron() {
+	global $wpdb;
+	
+	$rtable = $wpdb->prefix . "wbz404_redirects";
+	$ltable = $wpdb->prefix . "wbz404_logs";
+	
+	$query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1";
+	$rows = $wpdb->get_results($query, ARRAY_A);
+	foreach ($rows as $row) {
+		$url = $row['url'];
+		
+		$query2 = "select id from " . $rtable . " where url = '" . $wpdb->escape($url) . "' order by id limit 0,1";
+		$orig = $wpdb->get_row($query2, ARRAY_A, 0);
+		if ($orig['id'] != 0) {
+			$original = $orig['id'];
+			
+			//Fix the logs table
+			$query2 = "update " . $ltable . " set redirect_id = " . $wpdb->escape($original) . " where redirect_id in (select id from " . $rtable . " where url = '" . $wpdb->escape($url) . "' and id != " . $wpdb->escape($original) . ")";
+			$wpdb->query($query2);
+
+			$query2 = "delete from " . $rtable . " where url='" . $wpdb->escape($url) . "' and id != " . $wpdb->escape($original);
+			$wpdb->query($query2);
+
+		}
+	}
+
 }
 
 register_activation_hook(WBZ404_NAME,'wbz404_pluginActivation');
