@@ -4,7 +4,7 @@ Donate link: http://www.weberz.com/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Tested up to: 3.2.1
-Stable tag: 1.1
+Stable tag: 1.2
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -25,6 +25,7 @@ Creates automatic redirects for 404 traffic and page suggestions when matches ar
 * Ability to automatically remove manual and automatic redirects once they are no longer being used
 * All features work with both pages and posts
 * Create automatic redirects for any URL resolving to a single page or post that isn't the current permalink
+* Basic stats of plugin usage
 
 Convert your 404 traffic by providing your site visitors with a better browsing experience and eliminate 404 URLs on your site.
 
@@ -61,21 +62,47 @@ Yes! 404 Redirected records the page/post ID number and looks up the most curren
 
 == Changelog == 
 
-= 1.1 = 2011-11-29
+= Version 1.2 = 
+
+Released: 2011-12-06
+
+New Features:
+
+* Added cron to clean up duplicate redirects caused by simultaneous hits
+* Added optional admin notifications when captured URLs goes over specified level
+* Added new basic stats information from logs
+* Modified default options to turn on automatic redirects for new installs
+* Added bulk processing of captured and ignored URLs
+* Added bulk deletion on trashed redirects and URLs
+
+Bug Fixes:
+
+* Fixed bug that caused plugin to remove and re-add redirects
+* Fixed bug that caused logs to display nothing when ordered by URL
+
+= Version 1.1 = 
+
+Released: 2011-11-29
 
 * Fixed adding and editing of Tag & Category redirects
 * Fixed bug causing category redirects to incorrectly match external redirects
 
-= 1.0 = 2011-11-20
+= Version 1.0 = 
+
+Released: 2011-11-20
 
 * Initial Release
 
 == Upgrade Notice ==
 
-= 1.1 =
+= Version 1.2 =
+
+Major bug fixes. Also added bulk processing of URLs and admin notifications.
+
+= Version 1.1 =
 
 2 bug fixes in adding/editing redirects
 
-= 1.0 =
+= Version 1.0 =
 
 Initial Release
