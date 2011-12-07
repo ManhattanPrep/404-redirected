@@ -788,6 +788,11 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
 	}
 	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_logs\" title=\"" . wbz404_trans('Redirect & Capture Logs') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Logs') . "</a>";
 	$class="";
+	if ($sub == "stats") {
+		$class="nav-tab-active";
+	}
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . wbz404_trans('Stats') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Stats') . "</a>";
+	$class="";
 	if ($sub == "options") {
 		$class="nav-tab-active";
 	}
@@ -985,6 +990,8 @@ function wbz404_adminPage() {
 		$sub = "logs";
 	} else if ($sub == "wbz404_edit") {
 		$sub = "edit";
+	} else if ($sub == "wbz404_stats") {
+		$sub = "stats";
 	} else {
 		$sub = "redirects";
 	}
@@ -1000,10 +1007,154 @@ function wbz404_adminPage() {
 		wbz404_adminLogsPage();
 	} else if ($sub == "edit") {
 		wbz404_adminEditPage();
+	} else if ($sub == "stats") {
+		wbz404_adminStatsPage();
 	} else {
 		echo wbz404_trans('Invalid Sub Page ID');
 	}
 	wbz404_adminFooter();
+}
+
+function wbz404_getStatsCount($query='') {
+	global $wpdb;
+	$results = 0;
+	if ($query != '') {
+		$row = $wpdb->get_col($query);
+		$results = $row[0];
+	}
+	return $results;
+}
+
+function wbz404_adminStatsPage() {
+	global $wpdb;
+	$sub = "stats";
+
+	$redirects = $wpdb->prefix . "wbz404_redirects";
+	$logs = $wpdb->prefix . "wbz404_logs";
+	$hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
+
+	echo "<div class=\"postbox-container\" style=\"float: right; width: 49%;\">";
+		echo "<div class=\"metabox-holder\">";
+			echo " <div class=\"meta-box-sortables\">";
+
+				$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_AUTO;
+				$auto301 = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_AUTO;
+				$auto302 = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $redirects where disabled = 0 and code = 301 and status = " . WBZ404_MANUAL;
+				$manual301 = wbz404_getStatsCount($query);
+				
+				$query = "select count(id) from $redirects where disabled = 0 and code = 302 and status = " . WBZ404_MANUAL;
+				$manual302 = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_AUTO . " or status = " . WBZ404_MANUAL . ")";
+				$trashed = wbz404_getStatsCount($query);
+
+				$total = $auto301 + $auto302 + $manual301 + $manual302 + $trashed;
+
+				$content = "";
+				$content .= "<p $hr>";
+				$content .= "<strong>" . wbz404_trans('Automatic 301 Redirects') . ":</strong> " . $auto301 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Automatic 302 Redirects') . ":</strong> " . $auto302 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Manual 301 Redirects') . ":</strong> " . $manual301 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Manual 302 Redirects') . ":</strong> " . $manual302 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Trashed Redirects') . ":</strong> " . $trashed . "</p>";
+				$content .= "<p style=\"margin-top: 4px;\">";
+				$content .= "<strong>" . wbz404_trans('Total Redirects') . ":</strong> " . $total;
+				$content .= "</p>";
+				wbz404_postbox("wbz404-redirectStats", wbz404_trans('Redirects'), $content);
+
+				$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_CAPTURED;
+				$captured = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $redirects where disabled = 0 and status = " . WBZ404_IGNORED;
+				$ignored = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $redirects where disabled = 1 and (status = " . WBZ404_CAPTURED . " or status = " . WBZ404_IGNORED . ")";
+				$trashed = wbz404_getStatsCount($query);
+
+				$total = $captured + $ignored + $trashed;
+				
+				$content = "";
+				$content .= "<p $hr>";
+				$content .= "<strong>" . wbz404_trans('Captured URLs') . ":</strong> " . $captured . "<br>";
+				$content .= "<strong>" . wbz404_trans('Ignored 404 URLs') . ":</strong> " . $ignored . "<br>";
+				$content .= "<strong>" . wbz404_trans('Trashed URLs') . ":</strong> " . $trashed . "</p>";
+				$content .= "<p style=\"margin-top: 4px;\">";
+				$content .= "<strong>" . wbz404_trans('Total URLs') . ":</strong> " . $total;
+				$content .= "</p>";
+				wbz404_postbox("wbz404-capturedStats", wbz404_trans('Captured URLs'), $content);
+
+			echo "</div>";
+		echo "</div>";
+	echo "</div>";
+
+	echo "<div class=\"postbox-container\" style=\"width: 49%;\">";
+		echo "<div class=\"metabox-holder\">";
+			echo " <div class=\"meta-box-sortables\">";
+
+			$today = mktime(0,0,0, date('m'), date('d'), date('Y'));
+			$firstm = mktime(0,0,0,date('m'), 1, date('Y'));
+			$firsty = mktime(0,0,0,1,1,date('Y'));
+
+			for ($x=0; $x <= 3; $x++) {
+				if ($x == 0) {
+					$title="Today's Stats";
+					$ts = $today;
+				} else if ($x == 1) {
+					$title="This Month";
+					$ts = $firstm;
+				} else if ($x == 2) {
+					$title="This Year";
+					$ts = $firsty;
+				} else if ($x == 3) {
+					$title="All Stats";
+					$ts = 0;
+				}
+
+				$query = "select count(id) from $logs where timestamp >= $ts and action = '404'";
+				$disp404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action = '404'";
+				$distinct404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action = '404'";
+				$visitors404 = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action = '404'";
+				$refer404 = wbz404_getStatsCount($query);
+
+				$query = "select count(id) from $logs where timestamp >= $ts and action != '404'";
+				$redirected = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct redirect_id) from $logs where timestamp >= $ts and action != '404'";
+				$distinctredirected = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct remote_host) from $logs where timestamp >= $ts and action != '404'";
+				$distinctvisitors = wbz404_getStatsCount($query);
+
+				$query = "select count(distinct referrer) from $logs where timestamp >= $ts and action != '404'";
+				$distinctrefer = wbz404_getStatsCount($query);
+
+				$content = "";
+				$content .= "<p>";
+				$content .= "<strong>" . wbz404_trans('Page Not Found Displayed') . ":</strong> " . $disp404 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found URLs') . ":</strong> " . $distinct404 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found Visitors') . ":</strong> " . $visitors404 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Page Not Found Referrers') . ":</strong> " . $refer404 . "<br>";
+				$content .= "<strong>" . wbz404_trans('Hits Redirected') . ":</strong> " . $redirected . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique URLs Redirected') . ":</strong> " . $distinctredirected . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Redirected Visitors') . ":</strong> " . $distinctvisitors . "<br>";
+				$content .= "<strong>" . wbz404_trans('Unique Redirected Referrers') . ":</strong> " . $distinctrefer . "<br>";
+				$content .= "</p>";
+				wbz404_postbox("wbz404-stats" . $x, wbz404_trans($title), $content);
+			}
+			echo "</div>";
+		echo "</div>";
+	echo "</div>";
+	
 }
 
 function wbz404_adminLogsPage() {
