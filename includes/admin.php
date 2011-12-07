@@ -319,7 +319,11 @@ function wbz404_getLogRecords($tableOptions) {
 	global $wpdb;
 	$rows = array();
 
-	$query = "select redirect_id, timestamp, remote_host, referrer, action from " . $wpdb->prefix . "wbz404_logs where 1 ";
+	$logs = $wpdb->prefix . "wbz404_logs";
+	$redirects = $wpdb->prefix . "wbz404_redirects";
+
+	$query = "select " . $logs . ".redirect_id, " . $logs . ".timestamp, " . $logs . ".remote_host, " . $logs . ".referrer, " . $logs . ".action, " . $redirects . ".url from " . $logs;
+	$query .= " left outer join " . $redirects . " on " . $logs . ".redirect_id = " . $redirects . ".id where 1 ";
 	if ($tableOptions['logsid'] != 0) {
 		$query .= " and redirect_id = " . $tableOptions['logsid'] . " ";
 	}
