@@ -142,27 +142,28 @@ function wbz404_process404() {
 			}
 		}
 	} else {
-
 		if (is_single() || is_page()) {	
-			$theID = get_the_ID();
-			$permalink = wbz404_permalinkInfo($theID . "|POST", 0);
-			$urlParts = parse_url($permalink['link']);
+			if (!is_feed()) {
+				$theID = get_the_ID();
+				$permalink = wbz404_permalinkInfo($theID . "|POST", 0);
+				$urlParts = parse_url($permalink['link']);
 
-			//Check for forced permalinks
-			if ($options['force_permalinks'] == '1' && $options['auto_redirects'] == '1') {
-				if ($requestedURL != $urlParts['path']) {
-					$redirect_id = wbz404_setupRedirect($requestedURL, WBZ404_AUTO, WBZ404_POST, $permalink['id'], $options['default_redirect'], 0);
-					wbz404_logRedirectHit($redirect_id, $permalink['link']);
-					wp_redirect($permalink['link'], $options['default_redirect']);
-					exit;
+				//Check for forced permalinks
+				if ($options['force_permalinks'] == '1' && $options['auto_redirects'] == '1') {
+					if ($requestedURL != $urlParts['path']) {
+						$redirect_id = wbz404_setupRedirect($requestedURL, WBZ404_AUTO, WBZ404_POST, $permalink['id'], $options['default_redirect'], 0);
+						wbz404_logRedirectHit($redirect_id, $permalink['link']);
+						wp_redirect($permalink['link'], $options['default_redirect']);
+						exit;
+					}
 				}
-			}
 
-			if ($requestedURL == $urlParts['path']) {
-				//Not a 404 Link. Check for matches
-				if ($options['remove_matches'] == '1') {
-					if ($redirect['id'] != '0') {
-						wbz404_cleanRedirect($redirect['id']);
+				if ($requestedURL == $urlParts['path']) {
+					//Not a 404 Link. Check for matches
+					if ($options['remove_matches'] == '1') {
+						if ($redirect['id'] != '0') {
+							wbz404_cleanRedirect($redirect['id']);
+						}
 					}
 				}
 			}
