@@ -286,7 +286,13 @@ function wbz404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
 	global $wpdb;
 	$rows = array();
 
-	$query = "select id, url, status, type, final_dest, code, timestamp from " . $wpdb->prefix . "wbz404_redirects where 1 and (";
+	$redirects = $wpdb->prefix . "wbz404_redirects";
+	$logs = $wpdb->prefix . "wbz404_logs";
+
+	$query = "select " . $redirects . ".id, " . $redirects . ".url, " . $redirects . ".status, " . $redirects . ".type, " . $redirects . ".final_dest, " . $redirects . ".code, " . $redirects . ".timestamp";
+	$query .= ", count(" . $logs . ".id) as hits from " . $redirects . " ";
+	$query .= " left outer join " . $logs . " on " . $redirects . ".id = " . $logs . ".redirect_id ";
+	$query .= " where 1 and (";
 	if ($tableOptions['filter'] == 0 || $tableOptions['filter'] == -1) {
 		if ($sub == "redirects") {
 			$query .= "status = " . WBZ404_MANUAL . " or status = " . WBZ404_AUTO;
@@ -303,6 +309,8 @@ function wbz404_getRecords($sub, $tableOptions, $limitEnforced = 1) {
 	} else {
 		$query .= "and disabled = 1 ";
 	}
+
+	$query .= "group by " . $redirects . ".id ";
 
 	$query .= "order by " . $tableOptions['orderby'] . " " . $tableOptions['order'] . " ";
 	
@@ -754,6 +762,8 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
 		$header = " " . wbz404_trans('Options');
 	} else if ($sub == "logs") {
 		$header = " " . wbz404_trans('Logs');
+	} else if ($sub == "stats") {
+		$header = " " . wbz404_trans('Stats');
 	} else if ($sub == "edit") {
 		$header = ": " . wbz404_trans('Edit Redirect');
 	} else if ($sub == "redirects") {
@@ -796,6 +806,11 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
 		$class="nav-tab-active";
 	}
 	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_stats\" title=\"" . wbz404_trans('Stats') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Stats') . "</a>";
+	$class="";
+	if ($sub == "tools") {
+		$class="nav-tab-active";
+	}
+	echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . wbz404_trans('Tools') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Tools') . "</a>";
 	$class="";
 	if ($sub == "options") {
 		$class="nav-tab-active";
@@ -898,6 +913,10 @@ function wbz404_adminPage() {
 		if (check_admin_referer('wbz404_capturedBulkAction') && is_admin()) {
 			$message = wbz404_bulkProcess($action, $_POST['idnum']);
 		}
+	} else if ($action == "purgeRedirects") {
+		if (check_admin_referer('wbz404_purgeRedirects') && is_admin()) {
+			$message = wbz404_purgeRedirects();
+		}
 	}
 
 	// Handle Trash Functionality
@@ -996,6 +1015,8 @@ function wbz404_adminPage() {
 		$sub = "edit";
 	} else if ($sub == "wbz404_stats") {
 		$sub = "stats";
+	} else if ($sub == "wbz404_tools") {
+		$sub = "tools";
 	} else {
 		$sub = "redirects";
 	}
@@ -1013,6 +1034,8 @@ function wbz404_adminPage() {
 		wbz404_adminEditPage();
 	} else if ($sub == "stats") {
 		wbz404_adminStatsPage();
+	} else if ($sub == "tools") {
+		wbz404_adminToolsPage();
 	} else {
 		echo wbz404_trans('Invalid Sub Page ID');
 	}
@@ -1448,7 +1471,7 @@ function wbz404_adminRedirectsPage() {
 	$columns['code']['orderby'] = "code";
 	$columns['code']['width'] = "5%";
 	$columns['hits']['title'] = "Hits";
-	$columns['hits']['orderby'] = "";
+	$columns['hits']['orderby'] = "hits";
 	$columns['hits']['width'] = "10%";
 	$columns['timestamp']['title'] = "Created";
 	$columns['timestamp']['orderby'] = "timestamp";
@@ -1526,7 +1549,7 @@ function wbz404_adminRedirectsPage() {
 				}
 
 
-				$hits = wbz404_getRedirectHits($row['id']);
+				$hits = $row['hits'];
 				$last_used = wbz404_getRedirectLastUsed($row['id']);
 				if ($last_used != 0) {
 					$last = date("Y/m/d h:i:s A", $last_used);
@@ -1743,7 +1766,7 @@ function wbz404_adminCapturedPage() {
 	$columns['url']['orderby'] = "url";
 	$columns['url']['width'] = "50%";
 	$columns['hits']['title'] = "Hits";
-	$columns['hits']['orderby'] = "";
+	$columns['hits']['orderby'] = "hits";
 	$columns['hits']['width'] = "10%";
 	$columns['timestamp']['title'] = "Created";
 	$columns['timestamp']['orderby'] = "timestamp";
@@ -1810,7 +1833,7 @@ function wbz404_adminCapturedPage() {
 			foreach ($rows as $row) {
 				$displayed++;
 
-				$hits = wbz404_getRedirectHits($row['id']);
+				$hits = $row['hits'];
 				$last_used = wbz404_getRedirectLastUsed($row['id']);
 				if ($last_used != 0) {
 					$last = date("Y/m/d h:i:s A", $last_used);
@@ -2054,4 +2077,107 @@ function wbz404_adminEditPage() {
 	} else {
 		echo "Error: Invalid ID Number!";
 	}
+}
+
+function wbz404_AdminToolsPage() {
+	$sub = "tools";
+
+	$hr = "style=\"border: 0px; margin-bottom: 0px; padding-bottom: 4px; border-bottom: 1px dotted #DEDEDE;\"";
+
+	$url = "?page=wbz404_redirected&subpage=wbz404_tools";
+	$action = "wbz404_purgeRedirects";
+
+        $link = wp_nonce_url($url, $action);
+
+
+	echo "<div class=\"postbox-container\" style=\"width: 100%;\">";
+	echo "<div class=\"metabox-holder\">";
+	echo " <div class=\"meta-box-sortables\">";
+
+	$content = "";
+	$content .= "<form method=\"POST\" action=\"" . $link . "\">";
+	$content .= "<input type=\"hidden\" name=\"action\" value=\"purgeRedirects\">";
+
+	$content .= "<p>";
+	$content .= "<strong><label for=\"purgetype\">" . wbz404_trans('Purge Type') . ":</label></strong> <select name=\"purgetype\" id=\"purgetype\">";
+	$content .= "<option value=\"logs\">" . wbz404_trans('Logs Only') . "</option>";
+	$content .= "<option value=\"redirects\">" . wbz404_trans('Logs & Redirects') . "</option>";
+	$content .= "</select><br><br>";
+
+	$content .= "<strong>" . wbz404_trans('Redirect Types') . ":</strong><br>";
+	$content .= "<ul style=\"margin-left: 40px;\">";
+	$content .= "<li><input type=\"checkbox\" id=\"auto\" name=\"types[]\" value=\"" . WBZ404_AUTO . "\"> <label for=\"auto\">" . wbz404_trans('Automatic Redirects') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"manual\" name=\"types[]\" value=\"" . WBZ404_MANUAL . "\"> <label for=\"manual\">" . wbz404_trans('Manual Redirects') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"captured\" name=\"types[]\" value=\"" . WBZ404_CAPTURED . "\"> <label for=\"captured\">" . wbz404_trans('Captured URLs') . "</label></li>";
+	$content .= "<li><input type=\"checkbox\" id=\"ignored\" name=\"types[]\" value=\"" . WBZ404_IGNORED . "\"> <label for=\"ignored\">" . wbz404_trans('Ignored URLs') . "</label></li>";
+	$content .= "</ul>";
+
+	$content .= "<strong>" . wbz404_trans('Sanity Check') . "</strong><br>";
+	$content .= wbz404_trans('Using the purge options will delete logs and redirects matching the boxes selected above. This action is not reversible. Hopefully you know what you\'re doing.') . "<br>";
+	$content .= "<br>";
+	$content .= "<input type=\"checkbox\" id=\"sanity\" name=\"sanity\" value=\"1\"> " . wbz404_trans('I understand the above statement, I know what I am doing... blah blah blah. Just delete the records!') . "<br>";
+	$content .= "<br>";
+	$content .= "<input type=\"submit\" value=\"" . wbz404_trans('Purge Entries!') . "\" class=\"button-secondary\">";
+	$content .= "</p>";
+
+	$content .= "</form>";
+
+	wbz404_postbox("wbz404-purgeRedirects", wbz404_trans('Purge Options'), $content);
+
+	echo "</div></div></div>";
+}
+
+function wbz404_purgeRedirects() {
+	global $wpdb;
+	$message = "";
+
+	$redirects = $wpdb->prefix . "wbz404_redirects";
+	$logs = $wpdb->prefix . "wbz404_logs";
+
+	$sanity = $_POST['sanity'];
+	if ($sanity == "1") {
+		$type = $_POST['types'];
+		if ($type != "") {
+			if (is_array($type)) {
+				$types = "";
+				$x=0;
+				for ($i=0; $i < count($type); $i++) {
+					if (preg_match('/[0-9]+/', $type[$i])) {
+						if ($x > 0) {
+							$types .= ",";
+						}
+						$types .= $type[$i];
+						$x++;
+					}
+				}
+
+				if ($types != "") {
+					$purge = $_POST['purgetype'];
+					if ($purge == "logs" || $purge == "redirects") {
+						$query = "delete from " . $logs . " where redirect_id in (select id from " . $redirects . " where status in (" . $types . "))";
+						$logcount = $wpdb->query( $query );
+						$message = $logcount . " " . wbz404_trans('Log entries were purged.');
+
+						if ($purge == "redirects") {
+							$query = "delete from " . $redirects . " where status in (" . $types . ")";
+							$count = $wpdb->query($query);
+							$message .= "<br>";
+							$message .= $count . " " . wbz404_trans('Redirect entries were purged.');
+						}
+					} else {
+						$message = wbz404_trans('Error: An invalid purge type was selected. Exiting.');
+					}
+				} else {
+					$message = wbz404_trans('Error: No valid redirect types were selected. Exiting.');
+				}
+			} else {
+				$message = wbz404_trans('An unknown error has occurred.');
+			}
+		} else {
+			$message = wbz404_trans('Error: No redirect types were selected. No purges will be done.');
+		}
+	} else {
+		$message = wbz404_trans('Error: You didn\'t check the I understand checkbox. No purging of records for you!');
+	}
+	return $message;
 }

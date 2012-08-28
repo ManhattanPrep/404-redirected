@@ -213,6 +213,7 @@ function wbz404_loadRedirectData($url) {
         $redirect = array();
 
         $query="select * from " . $wpdb->prefix . "wbz404_redirects where url = '" . $wpdb->escape($url) . "'";
+
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
                 $redirect[id]=0;
@@ -394,3 +395,68 @@ function wbz404_removeDuplicatesCron() {
 register_activation_hook(WBZ404_NAME,'wbz404_pluginActivation');
 register_deactivation_hook(WBZ404_NAME,'wbz404_pluginRemove');
 add_action('init', 'wbz404_load_translations');
+
+function wbz404_SortQuery($urlParts) {
+	$url = "";
+        if ($urlParts['query'] != "") {
+                $queryString = array();
+                $urlQuery = $urlParts['query'];
+                $queryParts = preg_split("/[;&]/", $urlQuery);
+                foreach ($queryParts as $query) {
+                        if (strpos($query, "=") === false) {
+                                $queryString[$query]='';
+                        } else {
+                                $stringParts = preg_split("/=/", $query);
+                                $queryString[$stringParts[0]]=$stringParts[1];
+                        }
+                }
+                ksort($queryString);
+                $x=0;
+                $newQS = "";
+                foreach ($queryString as $key => $value) {
+                        if ($x != 0) {
+                                $newQS .= "&";
+                        }
+                        $newQS .= $key;
+                        if ($value != "") {
+                                $newQS .= "=" . $value;
+                        }
+                        $x++;
+                }
+
+                if ($newQS != "") {
+                	$url .= "?" . $newQS;
+                }
+        }
+	return $url;
+}
+
+function wbz404_ProcessRedirect($redirect) {
+	//A redirect record has already been found.
+	if (($redirect['status'] == WBZ404_MANUAL || $redirect['status'] == WBZ404_AUTO) && $redirect['disabled'] == 0) {
+		//It's a redirect, not a captured or ignored URL
+		if ($redirect['type'] == WBZ404_EXTERNAL) {
+			//It's a external url setup by the user
+			wbz404_logRedirectHit($redirect['id'], $redirect['final_dest']);
+			wp_redirect($redirect['final_dest'], $redirect['code']);
+			exit;
+		} else {
+			$key="";
+			if ($redirect['type'] == WBZ404_POST) {
+				$key = $redirect['final_dest'] . "|POST";
+			} else if ($redirect['type'] == WBZ404_CAT) {
+				$key = $redirect['final_dest'] . "|CAT";
+			} else if ($redirect['type'] == WBZ404_TAG) {
+				$key = $redirect['final_dest'] . "|TAG";
+			}
+			if ($key != "") {
+				$permalink = wbz404_permalinkInfo($key, 0);
+				wbz404_logRedirectHit($redirect['id'], $permalink['link']);
+				wp_redirect($permalink['link'], $redirect['code']);
+				exit;
+			}
+		}
+	} else {
+		wbz404_logRedirectHit($redirect['id'], '404');
+	}
+}
