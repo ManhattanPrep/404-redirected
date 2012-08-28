@@ -4,6 +4,13 @@
  *
 */
 
+register_activation_hook(WBZ404_NAME,'wbz404_pluginActivation');
+register_deactivation_hook(WBZ404_NAME,'wbz404_pluginRemove');
+add_action('init', 'wbz404_load_translations');
+
+add_action('wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron');
+add_action('wbz404_cleanupCronAction', 'wbz404_cleaningCron');
+
 function wbz404_load_translations() {
 	$trans_path = WBZ404_PATH . '/translations';
 	load_plugin_textdomain(WBZ404_TRANS, '', $trans_path);
@@ -118,15 +125,41 @@ function wbz404_pluginActivation() {
 	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query($query);
 
-	$now = time();
-	wp_schedule_event($now + 86400, 'daily', 'wbz404_cleaningCron');
-	wp_schedule_event($now + 3600, 'hourly', 'wbz404_removeDuplicatesCron');
+	$timestamp = wp_next_scheduled('wbz404_cleanupCronAction');
+	if ($timestamp == False) {
+		wp_schedule_event(current_time( 'timestamp' ) - 86400, 'daily', 'wbz404_cleanupCronAction');
+	}
+
+	$timestamp = wp_next_scheduled('wbz404_duplicateCronAction');
+	if ($timestamp == False) {
+		wp_schedule_event(current_time( 'timestamp' ) - 3600, 'hourly', 'wbz404_duplicateCronAction');
+	}
+}
+
+function wbz404_unregisterCrons() {
+
+	$crons = array('wbz404_cleanupCronAction', 'wbz404_duplicateCronAction', 'wbz404_removeDuplicatesCron', 'wbz404_cleaningCron');
+	for ($i=0; $i < count($crons); $i++) {
+		$cron_name = $crons[$i];
+		$timestamp = wp_next_scheduled($cron_name);
+		while ($timestamp != False) {
+			wp_unschedule_event($timestamp, $cron_name);
+			$timestamp = wp_next_scheduled($cron_name);
+		}
+
+		$timestamp = wp_next_scheduled($cron_name, '');
+		while ($timestamp != False) {
+			wp_unschedule_event($timestamp, $cron_name, '');
+			$timestamp = wp_next_scheduled($cron_name, '');
+		}
+
+		wp_clear_scheduled_hook($cron_name);
+	}
 }
 
 function wbz404_pluginRemove() {
 	delete_option('wbz404_settings');
-	wp_clear_scheduled_hook('wbz404_cleaningCron');
-	wp_clear_scheduled_hook('wbz404_removeDuplicatesCron');
+	wbz404_unregisterCrons();
 }
 
 function wbz404_rankPermalinks($url, $includeCats = '1', $includeTags = '1') {
@@ -366,7 +399,7 @@ function wbz404_cleaningCron() {
 
 function wbz404_removeDuplicatesCron() {
 	global $wpdb;
-	
+
 	$rtable = $wpdb->prefix . "wbz404_redirects";
 	$ltable = $wpdb->prefix . "wbz404_logs";
 	
@@ -391,10 +424,6 @@ function wbz404_removeDuplicatesCron() {
 	}
 
 }
-
-register_activation_hook(WBZ404_NAME,'wbz404_pluginActivation');
-register_deactivation_hook(WBZ404_NAME,'wbz404_pluginRemove');
-add_action('init', 'wbz404_load_translations');
 
 function wbz404_SortQuery($urlParts) {
 	$url = "";
@@ -460,3 +489,4 @@ function wbz404_ProcessRedirect($redirect) {
 		wbz404_logRedirectHit($redirect['id'], '404');
 	}
 }
+
