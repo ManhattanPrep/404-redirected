@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 define('WBZ404_URL', plugin_dir_url(__FILE__) );
 define('WBZ404_PATH', plugin_dir_path(__FILE__) );
 define('WBZ404_NAME', plugin_basename( __FILE__ ) );
-define('WBZ404_VERSION', '1.3');
+define('WBZ404_VERSION', '1.3.1');
 define('WBZ404_HOME', 'http://www.weberz.com/plugins/404-redirected/');
 define('WBZ404_TRANS', 'wbz404_redirected');
 
