@@ -4,7 +4,7 @@ Donate link: http://www.weberz.com/
 Tags: 404, page not found, redirect, 301, 302, permanent redirect, temporary redirect, error
 Requires at least: 3.1
 Tested up to: 3.4.1
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 
 Creates automatic redirects for 404 traffic and page suggestions when matches are not found providing better service to your web visitors.
 
@@ -69,6 +69,20 @@ I try to get to the support forums as often as I can. This plugin is just one of
 3. Create New Redirect
 
 == Changelog == 
+
+= Version 1.3.2 = 
+
+Released: 2012-08-29
+
+New Features:
+
+* None
+
+Bug Fixes:
+
+* Remember way back when 1.3.1 was released (yesterday) and I said the cron jobs were fixed? They weren't. This update fixes crons for users who are upgrading by implementing a version check on the DB.
+* Added upgrade script functionality by implementing DB version checking
+* Performed general code cleanup to get rid of PHP NOTICES
 
 = Version 1.3.1 = 
 
