@@ -20,7 +20,19 @@ function wbz404_trans($text = '') {
 	return __($text, WBZ404_TRANS);
 }
 
-function wbz404_getOptions() {
+function wbz404_updateDBVersion() {
+	$options = wbz404_getOptions(1);
+
+	$options['DB_VERSION'] = WBZ404_VERSION;
+
+	if (function_exists('update_option')) {
+		update_option('wbz404_settings', $options);
+	}
+
+	return $options;
+}
+
+function wbz404_getOptions($skip_db_check="0") {
 	$options = get_option('wbz404_settings');
 
 	if ($options == "") {
@@ -42,6 +54,19 @@ function wbz404_getOptions() {
 	if ($missing != 0) {
 		if (function_exists('update_option')) {
 			update_option('wbz404_settings', $options);
+		}
+	}
+
+	if ($skip_db_check == "0") {
+		if ($options['DB_VERSION'] != WBZ404_VERSION) {
+			if (WBZ404_VERSION == "1.3.2") {
+				//Unregister all crons. Some were bad.
+				wbz404_unregisterCrons();
+
+				//Register the good ones
+				wbz404_registerCrons();
+			}
+			$options = wbz404_updateDBVersion();
 		}
 	}
 
@@ -125,6 +150,12 @@ function wbz404_pluginActivation() {
 	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query($query);
 
+	wbz404_registerCrons();
+
+	$options = wbz404_updateDBVersion();
+}
+
+function wbz404_registerCrons() {
 	$timestamp = wp_next_scheduled('wbz404_cleanupCronAction');
 	if ($timestamp == False) {
 		wp_schedule_event(current_time( 'timestamp' ) - 86400, 'daily', 'wbz404_cleanupCronAction');
@@ -133,7 +164,7 @@ function wbz404_pluginActivation() {
 	$timestamp = wp_next_scheduled('wbz404_duplicateCronAction');
 	if ($timestamp == False) {
 		wp_schedule_event(current_time( 'timestamp' ) - 3600, 'hourly', 'wbz404_duplicateCronAction');
-	}
+	}	
 }
 
 function wbz404_unregisterCrons() {
@@ -249,7 +280,7 @@ function wbz404_loadRedirectData($url) {
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
-                $redirect[id]=0;
+                $redirect['id']=0;
         } else {
                 $redirect['id'] = $row['id'];
                 $redirect['url'] = $row['url'];
@@ -293,13 +324,19 @@ function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
 function wbz404_logRedirectHit($id, $action) {
 	global $wpdb;
 	$now = time();
-	
+
+	if (isset($_SERVER['HTTP_REFERER'])) {
+		$referer=$_SERVER['HTTP_REFERER'];
+	} else {
+		$referer = "";
+	}	
+
 	$wpdb->insert($wpdb->prefix . "wbz404_logs",
 		array(
 			'redirect_id' => $id,
 			'timestamp' => $now,
 			'remote_host' => $_SERVER['REMOTE_ADDR'],
-			'referrer' => $_SERVER['HTTP_REFERER'],
+			'referrer' => $referer,
 			'action' => $action,
 		),
 		array(
@@ -427,7 +464,7 @@ function wbz404_removeDuplicatesCron() {
 
 function wbz404_SortQuery($urlParts) {
 	$url = "";
-        if ($urlParts['query'] != "") {
+        if (isset($urlParts['query']) && $urlParts['query'] != "") {
                 $queryString = array();
                 $urlQuery = $urlParts['query'];
                 $queryParts = preg_split("/[;&]/", $urlQuery);

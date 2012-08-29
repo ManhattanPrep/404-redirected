@@ -187,7 +187,7 @@ function wbz404_getTableOptions() {
 
 	if (!isset($_POST['filter'])) {
 		if (!isset($_GET['filter'])) {
-			if ($_GET['subpage'] == 'wbz404_captured') {
+			if (isset($_GET['subpage']) && $_GET['subpage'] == 'wbz404_captured') {
 				$tableOptions['filter'] = WBZ404_CAPTURED;
 			} else {
 				$tableOptions['filter'] = '0';
@@ -396,7 +396,7 @@ function wbz404_drawFilters($sub, $tableOptions) {
 		}
 
 		echo "<li>";
-			if (! ($sub == captured && $type == WBZ404_CAPTURED)) {
+			if (! ($sub == "captured" && $type == WBZ404_CAPTURED)) {
 				echo " | ";
 			}
 			echo "<a href=\"" . $thisurl . "\"" . $class . ">" . wbz404_trans($title);
@@ -768,6 +768,8 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
 		$header = ": " . wbz404_trans('Edit Redirect');
 	} else if ($sub == "redirects") {
 		$header = "";
+	} else {
+		$header = "";
 	}
 	echo "<div class=\"wrap\">";
 	if ($sub == "options") {
@@ -879,7 +881,12 @@ function wbz404_adminPage() {
 	$message="";
 
 	//Handle Post Actions
-	$action = $_POST['action'];
+	if (isset($_POST['action'])) {
+		$action = $_POST['action'];
+	} else {
+		$action = "";
+	}
+
 	if ($action == "updateOptions") {
 		if (check_admin_referer('wbz404UpdateOptions') && is_admin()) {
 			$sub="wbz404_options";
@@ -987,7 +994,7 @@ function wbz404_adminPage() {
 	}
 
 	//Handle edit posts
-	if ($_POST['action'] == "editRedirect") {
+	if (isset($_POST['action']) && $_POST['action'] == "editRedirect") {
 		if (isset($_POST['id']) && preg_match('/[0-9]+/', $_POST['id'])) {
 			if (check_admin_referer('wbz404editRedirect') && is_admin()) {
 				$message = wbz404_editRedirectData();
@@ -1003,7 +1010,11 @@ function wbz404_adminPage() {
 
 	// Deal With Page Tabs
 	if ($sub == "") {
-		$sub = strtolower($_GET['subpage']);
+		if (isset($_GET['subpage'])) {
+			$sub = strtolower($_GET['subpage']);
+		} else {
+			$sub = "";
+		}
 	}
 	if ($sub == "wbz404_options") {
 		$sub = "options";
@@ -1320,7 +1331,8 @@ function wbz404_adminOptionsPage() {
 				echo "<form method=\"POST\" action=\"" . $link . "\">";
 				echo "<input type=\"hidden\" name=\"action\" value=\"updateOptions\">";
 			
-				$content = "<p>" .wbz404_trans('Default redirect type') . ": ";
+				$content = "<p>" . wbz404_trans('DB Version Number') . ": " . $options['DB_VERSION'] . "</p>";
+				$content .= "<p>" . wbz404_trans('Default redirect type') . ": ";
 				$content .= "<select name=\"default_redirect\">";
 				$selected = "";
 				if ($options['default_redirect'] == '301') {
@@ -1654,10 +1666,15 @@ function wbz404_adminRedirectsPage() {
 
 		echo "<form method=\"POST\" action=\"" . $link . "\">";
 		echo "<input type=\"hidden\" name=\"action\" value=\"addRedirect\">";
-		echo "<strong><label for=\"url\">" . wbz404_trans('URL') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . $_POST['url'] . "\"> (" . wbz404_trans('Required') . ")<br>";
+		if (isset($_POST['url'])) {
+			$postedURL = $_POST['url'];
+		} else {
+			$postedURL = "";
+		}
+		echo "<strong><label for=\"url\">" . wbz404_trans('URL') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . $postedURL . "\"> (" . wbz404_trans('Required') . ")<br>";
 		echo "<strong><label for=\"dest\">" . wbz404_trans('Redirect to') . ":</strong> <select id=\"dest\" name=\"dest\">";
 			$selected = "";
-			if ($_POST['dest'] == "EXTERNAL") {
+			if (isset($_POST['dest']) && $_POST['dest'] == "EXTERNAL") {
 				$selected = " selected";
 			}
 			echo "<option value=\"EXTERNAL\"" . $selected . ">" . wbz404_trans('External Page') . "</options>";
@@ -1670,7 +1687,7 @@ function wbz404_adminRedirectsPage() {
 				$thisval = $id . "|POST";
 	
 				$selected = "";
-				if ($_POST['dest'] == $thisval) {
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
 					$selected = " selected";
 				}
 				echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Post') . ": " . $theTitle . "</option>";
@@ -1695,7 +1712,7 @@ function wbz404_adminRedirectsPage() {
 				}
 
 				$selected = "";
-				if ($_POST['dest'] == $thisval) {
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
 					$selected = " selected";
 				}
 				echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Page') . ": " . $theTitle . "</option>";
@@ -1708,7 +1725,7 @@ function wbz404_adminRedirectsPage() {
 				$thisval = $id . "|CAT";
 				
 				$selected = "";
-				if ($_POST['dest'] == $thisval) {
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
 					$selected = " selected";
 				}
 				echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Category') . ": " . $theTitle . "</option>";
@@ -1721,16 +1738,21 @@ function wbz404_adminRedirectsPage() {
 				$thisval = $id . "|TAG";
 				
 				$selected = "";
-				if ($_POST['dest'] == $thisval) {
+				if (isset($_POST['dest']) && $_POST['dest'] == $thisval) {
 					$selected = " selected";
 				}
 				echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Tag') . ": " . $theTitle . "</option>";
 			}
 			
 		echo "</select><br>";
-		echo "<strong><label for=\"external\">" . wbz404_trans('External URL') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $_POST['external'] . "\"> (" . wbz404_trans('Required if Redirect to is set to External Page') . ")<br>";
+		if (isset($_POST['external'])) {
+			$postedExternal = $_POST['external'];
+		} else {
+			$postedExternal = "";
+		}
+		echo "<strong><label for=\"external\">" . wbz404_trans('External URL') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $postedExternal . "\"> (" . wbz404_trans('Required if Redirect to is set to External Page') . ")<br>";
 		echo "<strong><label for=\"code\">" . wbz404_trans('Redirect Type') . ":</label></strong> <select id=\"code\" name=\"code\">";
-			if ($_POST['code'] == "") {
+			if ((! isset($_POST['code'])) || $_POST['code'] == "") {
 				$codeselected = $options['default_redirect'];
 			} else {
 				$codeselected = $_POST['code'];
@@ -2181,3 +2203,4 @@ function wbz404_purgeRedirects() {
 	}
 	return $message;
 }
+
