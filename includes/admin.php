@@ -51,7 +51,7 @@ function wbz404_postbox($id, $title, $content) {
 
 function wbz404_capturedCount() {
 	global $wpdb;
-	$query="select count(id) from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_CAPTURED);
+	$query="select count(id) from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_CAPTURED);
 	$captured = $wpdb->get_col($query, 0);
 	if (count($captured) == 0) {
 		$captured[0] = 0;
@@ -575,7 +575,7 @@ function wbz404_buildTableColumns($sub, $tableOptions, $columns) {
 function wbz404_getRedirectHits($id) {
 	global $wpdb;
 	
-	$query = "select count(id) from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id);
+	$query = "select count(id) from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql($id);
 	$row = $wpdb->get_col($query);
 	return $row[0];
 }
@@ -583,7 +583,7 @@ function wbz404_getRedirectHits($id) {
 function wbz404_getRedirectLastUsed($id) {
 	global $wpdb;
 	
-	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id) . " order by timestamp desc";
+	$query = "select timestamp from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql($id) . " order by timestamp desc";
 	$row = $wpdb->get_col($query);
 	return $row[0];
 }
@@ -615,7 +615,7 @@ function wbz404_addAdminRedirect() {
 		$dest = "";
 		if ($_POST['dest'] == "EXTERNAL") {
 			$type = WBZ404_EXTERNAL;
-			$dest = $wpdb->escape($_POST['external']);
+			$dest = esc_sql($_POST['external']);
 		} else {
 			$info = explode("|", $_POST['dest']);
 			if (count($info)==2) {
@@ -630,7 +630,7 @@ function wbz404_addAdminRedirect() {
 			}
 		}
 		if ($type != "" && $dest != "") {
-			wbz404_setupRedirect($wpdb->escape($_POST['url']), WBZ404_MANUAL, $type, $dest, $wpdb->escape($_POST['code']), 0);
+			wbz404_setupRedirect(esc_sql($_POST['url']), WBZ404_MANUAL, $type, $dest, esc_sql($_POST['code']), 0);
 			$_POST['url'] = "";
 			$_POST['code'] = "";
 			$_POST['external'] = "";
@@ -670,7 +670,7 @@ function wbz404_editRedirectData() {
 		$dest = "";
 		if ($_POST['dest'] === "" . WBZ404_EXTERNAL) {
 			$type = WBZ404_EXTERNAL;
-			$dest = $wpdb->escape($_POST['external']);
+			$dest = esc_sql($_POST['external']);
 		} else {
 			$info = explode("|", $_POST['dest']);
 			if (count($info)==2) {
@@ -1980,7 +1980,7 @@ function wbz404_adminEditPage() {
 	}
 
 	$query = "select id, url, type, final_dest, code from " . $wpdb->prefix . "wbz404_redirects where 1 ";
-	$query .= "and id = " . $wpdb->escape($recnum);
+	$query .= "and id = " . esc_sql($recnum);
 	
 	$redirect = $wpdb->get_row($query, ARRAY_A);
 

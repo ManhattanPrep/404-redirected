@@ -276,7 +276,7 @@ function wbz404_loadRedirectData($url) {
         global $wpdb;
         $redirect = array();
 
-        $query="select * from " . $wpdb->prefix . "wbz404_redirects where url = '" . $wpdb->escape($url) . "'";
+        $query="select * from " . $wpdb->prefix . "wbz404_redirects where url = '" . esc_sql($url) . "'";
 
         $row = $wpdb->get_row($query, ARRAY_A);
         if ($row == NULL) {
@@ -352,9 +352,9 @@ function wbz404_logRedirectHit($id, $action) {
 function wbz404_cleanRedirect($id) {
 	global $wpdb;
 	if ($id != "" && $id != '0') {
-		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . $wpdb->escape($id);
+		$query="delete from " . $wpdb->prefix . "wbz404_redirects where id = " . esc_sql($id);
 		$wpdb->query($query);
-		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . $wpdb->escape($id);
+		$query="delete from " . $wpdb->prefix . "wbz404_logs where redirect_id = " . esc_sql($id);
 		$wpdb->query($query);
 	}
 }
@@ -371,13 +371,13 @@ function wbz404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_CAPTURED) . " or status = " . $wpdb->escape(WBZ404_IGNORED) . ") ";
-		$query .= "and timestamp < " . $wpdb->escape($then);
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_CAPTURED) . " or status = " . esc_sql(WBZ404_IGNORED) . ") ";
+		$query .= "and timestamp < " . esc_sql($then);
 		$wpdb->query($query);
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where (status = " . $wpdb->escape(WBZ404_CAPTURED) . " or status = " . $wpdb->escape(WBZ404_IGNORED) . ") and ";
-		$query .= "timestamp <= " . $wpdb->escape($then) . " and id not in (";
+		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where (status = " . esc_sql(WBZ404_CAPTURED) . " or status = " . esc_sql(WBZ404_IGNORED) . ") and ";
+		$query .= "timestamp <= " . esc_sql($then) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results($query, ARRAY_A);
@@ -394,13 +394,13 @@ function wbz404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_AUTO) . ") ";
-		$query .= "and timestamp < " . $wpdb->escape($then);
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_AUTO) . ") ";
+		$query .= "and timestamp < " . esc_sql($then);
 		$wpdb->query($query);
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_AUTO) . " status ";
-		$query .= "timestamp <= " . $wpdb->escape($then) . " and id not in (";
+		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_AUTO) . " status ";
+		$query .= "timestamp <= " . esc_sql($then) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results($query, ARRAY_A);
@@ -417,13 +417,13 @@ function wbz404_cleaningCron() {
 
 		//Clean up old logs
 		$query = "delete from " . $wpdb->prefix . "wbz404_logs where ";
-		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_MANUAL) . ") ";
-		$query .= "and timestamp < " . $wpdb->escape($then);
+		$query .= "redirect_id in (select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_MANUAL) . ") ";
+		$query .= "and timestamp < " . esc_sql($then);
 		$wpdb->query($query);
 
 		//Find unused urls
-		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . $wpdb->escape(WBZ404_MANUAL) . " and ";
-		$query .= "timestamp <= " . $wpdb->escape($then) . " and id not in (";
+		$query = "select id from " . $wpdb->prefix . "wbz404_redirects where status = " . esc_sql(WBZ404_MANUAL) . " and ";
+		$query .= "timestamp <= " . esc_sql($then) . " and id not in (";
 		$query .= "select redirect_id from " . $wpdb->prefix . "wbz404_logs";
 		$query .= ")";
 		$rows = $wpdb->get_results($query, ARRAY_A);
@@ -445,16 +445,16 @@ function wbz404_removeDuplicatesCron() {
 	foreach ($rows as $row) {
 		$url = $row['url'];
 		
-		$query2 = "select id from " . $rtable . " where url = '" . $wpdb->escape($url) . "' order by id limit 0,1";
+		$query2 = "select id from " . $rtable . " where url = '" . esc_sql($url) . "' order by id limit 0,1";
 		$orig = $wpdb->get_row($query2, ARRAY_A, 0);
 		if ($orig['id'] != 0) {
 			$original = $orig['id'];
 			
 			//Fix the logs table
-			$query2 = "update " . $ltable . " set redirect_id = " . $wpdb->escape($original) . " where redirect_id in (select id from " . $rtable . " where url = '" . $wpdb->escape($url) . "' and id != " . $wpdb->escape($original) . ")";
+			$query2 = "update " . $ltable . " set redirect_id = " . esc_sql($original) . " where redirect_id in (select id from " . $rtable . " where url = '" . esc_sql($url) . "' and id != " . esc_sql($original) . ")";
 			$wpdb->query($query2);
 
-			$query2 = "delete from " . $rtable . " where url='" . $wpdb->escape($url) . "' and id != " . $wpdb->escape($original);
+			$query2 = "delete from " . $rtable . " where url='" . esc_sql($url) . "' and id != " . esc_sql($original);
 			$wpdb->query($query2);
 
 		}
