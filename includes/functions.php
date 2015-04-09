@@ -158,7 +158,7 @@ function wbz404_pluginActivation() {
   ) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP addresses' AUTO_INCREMENT=1";
   $wpdb->query($query);
 
-  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_IP_bots` (
+  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_bots` (
     `ID` bigint(40) NOT NULL auto_increment,
     `user_agent` varchar(255) NOT NULL,
     PRIMARY KEY  (`ID`),
@@ -557,7 +557,7 @@ function wbz404_isIPIgnored(){
 function wbz404_isUserAgentIgnored(){
   global $wpdb;
   $user_agent = esc_sql( $_SERVER['HTTP_USER_AGENT'] );
-  $query = "SELECT user_agent FROM `" . $wpdb->prefix . "wbz404_ignored_IP_bots` where user_agent = '".$user_agent."' LIMIT 1";
+  $query = "SELECT user_agent FROM `" . $wpdb->prefix . "wbz404_ignored_bots` where user_agent = '".$user_agent."' LIMIT 1";
   $result = $wpdb->get_results($query);
   if(count($result) == 1){
     return true;
@@ -565,34 +565,31 @@ function wbz404_isUserAgentIgnored(){
 }
 
 function wbz404_get_ip_address() {
-    # check for shared internet/ISP IP
-    if (!empty($_SERVER['HTTP_CLIENT_IP']) && validate_ip($_SERVER['HTTP_CLIENT_IP'])) {
-        return $_SERVER['HTTP_CLIENT_IP'];
-    }
+  # check for shared internet/ISP IP
+  if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+    return $_SERVER['HTTP_CLIENT_IP'];
+  }
 
-    # check for IPs passing through proxies
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        # check if multiple ips exist in var
-        if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',') !== false) {
-            $iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            foreach ($iplist as $ip) {
-                if (validate_ip($ip))
-                    return $ip;
-            }
-        } else {
-            if (validate_ip($_SERVER['HTTP_X_FORWARDED_FOR']))
-                return $_SERVER['HTTP_X_FORWARDED_FOR'];
-        }
+  # check for IPs passing through proxies
+  if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    # check if multiple ips exist in var
+    if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',') !== false) {
+      $iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+      return $iplist[0];
     }
-    if (!empty($_SERVER['HTTP_X_FORWARDED']) && validate_ip($_SERVER['HTTP_X_FORWARDED']))
-        return $_SERVER['HTTP_X_FORWARDED'];
-    if (!empty($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']) && validate_ip($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
-        return $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
-    if (!empty($_SERVER['HTTP_FORWARDED_FOR']) && validate_ip($_SERVER['HTTP_FORWARDED_FOR']))
-        return $_SERVER['HTTP_FORWARDED_FOR'];
-    if (!empty($_SERVER['HTTP_FORWARDED']) && validate_ip($_SERVER['HTTP_FORWARDED']))
-        return $_SERVER['HTTP_FORWARDED'];
+    else{
+      return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+  }
+  if(!empty($_SERVER['HTTP_X_FORWARDED']))
+    return $_SERVER['HTTP_X_FORWARDED'];
+  if(!empty($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+    return $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+  if(!empty($_SERVER['HTTP_FORWARDED_FOR']))
+    return $_SERVER['HTTP_FORWARDED_FOR'];
+  if(!empty($_SERVER['HTTP_FORWARDED']))
+    return $_SERVER['HTTP_FORWARDED'];
 
-    # return REMOTE_ADDR since all else failed
-    return $_SERVER['REMOTE_ADDR'];
+  # return REMOTE_ADDR since all else failed
+  return $_SERVER['REMOTE_ADDR'];
 }
