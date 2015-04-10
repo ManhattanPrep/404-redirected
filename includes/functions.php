@@ -107,64 +107,64 @@ function wbz404_pluginActivation() {
 	global $wpdb;
 	add_option('wbz404_settings','','','no');
 
-        $charset_collate = '';
-        if ( version_compare(mysql_get_server_info(), '4.1.0', '>=') ) {
-                if (!empty($wpdb->charset)) {
-                        $charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
-                }
-                if (!empty($wpdb->collate)) {
-                        $charset_collate .= " COLLATE $wpdb->collate";
-                }
-        }
+				$charset_collate = '';
+				if ( version_compare(mysql_get_server_info(), '4.1.0', '>=') ) {
+								if (!empty($wpdb->charset)) {
+												$charset_collate .= " DEFAULT CHARACTER SET $wpdb->charset";
+								}
+								if (!empty($wpdb->collate)) {
+												$charset_collate .= " COLLATE $wpdb->collate";
+								}
+				}
 
 	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_redirects` (
-	  `id` bigint(30) NOT NULL auto_increment,
-	  `url` varchar(512) NOT NULL,
-	  `status` bigint(20) NOT NULL,
-	  `type` bigint(20) NOT NULL,
-	  `final_dest` varchar(512) NOT NULL,
-	  `code` bigint(20) NOT NULL,
-	  `disabled` int(10) NOT NULL default '0',
-	  `timestamp` bigint(30) NOT NULL,
-	  PRIMARY KEY  (`id`),
-	  KEY `status` (`status`),
-	  KEY `type` (`type`),
-	  KEY `code` (`code`),
-	  KEY `timestamp` (`timestamp`),
-	  KEY `disabled` (`disabled`),
-	  FULLTEXT KEY `url` (`url`),
-	  FULLTEXT KEY `final_dest` (`final_dest`)
+		`id` bigint(30) NOT NULL auto_increment,
+		`url` varchar(512) NOT NULL,
+		`status` bigint(20) NOT NULL,
+		`type` bigint(20) NOT NULL,
+		`final_dest` varchar(512) NOT NULL,
+		`code` bigint(20) NOT NULL,
+		`disabled` int(10) NOT NULL default '0',
+		`timestamp` bigint(30) NOT NULL,
+		PRIMARY KEY  (`id`),
+		KEY `status` (`status`),
+		KEY `type` (`type`),
+		KEY `code` (`code`),
+		KEY `timestamp` (`timestamp`),
+		KEY `disabled` (`disabled`),
+		FULLTEXT KEY `url` (`url`),
+		FULLTEXT KEY `final_dest` (`final_dest`)
 	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin Redirects Table' AUTO_INCREMENT=1";
 	$wpdb->query($query);
 
 	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_logs` (
-	  `id` bigint(40) NOT NULL auto_increment,
-	  `redirect_id` bigint(40) NOT NULL,
-	  `timestamp` bigint(40) NOT NULL,
-	  `remote_host` varchar(512) NOT NULL,
-	  `referrer` varchar(512) NOT NULL,
-	  `action` varchar(512) NOT NULL,
-	  PRIMARY KEY  (`id`),
-	  KEY `redirect_id` (`redirect_id`),
-	  KEY `timestamp` (`timestamp`)
+		`id` bigint(40) NOT NULL auto_increment,
+		`redirect_id` bigint(40) NOT NULL,
+		`timestamp` bigint(40) NOT NULL,
+		`remote_host` varchar(512) NOT NULL,
+		`referrer` varchar(512) NOT NULL,
+		`action` varchar(512) NOT NULL,
+		PRIMARY KEY  (`id`),
+		KEY `redirect_id` (`redirect_id`),
+		KEY `timestamp` (`timestamp`)
 	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query($query);
 
-  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` (
-    `ID` bigint(40) NOT NULL auto_increment,
-    `IP_address` varchar(255) NOT NULL,
-    PRIMARY KEY  (`ID`),
-    KEY `IP_address` (`IP_address`)
-  ) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP addresses' AUTO_INCREMENT=1";
-  $wpdb->query($query);
+	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` (
+		`ID` bigint(40) NOT NULL auto_increment,
+		`IP_address` varchar(255) NOT NULL,
+		PRIMARY KEY  (`ID`),
+		KEY `IP_address` (`IP_address`)
+	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP addresses' AUTO_INCREMENT=1";
+	$wpdb->query($query);
 
-  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_bots` (
-    `ID` bigint(40) NOT NULL auto_increment,
-    `user_agent` varchar(255) NOT NULL,
-    PRIMARY KEY  (`ID`),
-    KEY `user_agent` (`user_agent`)
-  ) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP bots' AUTO_INCREMENT=1";
-  $wpdb->query($query);
+	$query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_bots` (
+		`ID` bigint(40) NOT NULL auto_increment,
+		`user_agent` varchar(255) NOT NULL,
+		PRIMARY KEY  (`ID`),
+		KEY `user_agent` (`user_agent`)
+	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP bots' AUTO_INCREMENT=1";
+	$wpdb->query($query);
 
 	wbz404_registerCrons();
 
@@ -210,66 +210,66 @@ function wbz404_pluginRemove() {
 }
 
 function wbz404_rankPermalinks($url, $includeCats = '1', $includeTags = '1') {
-        global $wpdb;
-        $permalinks = array();
+				global $wpdb;
+				$permalinks = array();
 
-        $query = "select id from $wpdb->posts where post_status='publish' and (post_type='page' or post_type='post')";
-        $rows = $wpdb->get_results($query);
-        foreach ($rows as $row) {
-                $id = $row->id;
-                $the_permalink = get_permalink($id);
-                $urlParts = parse_url($the_permalink);
-                $scoreBasis = strlen($urlParts['path']);
-                $levscore = levenshtein($url, $urlParts['path'],1,1,1);
-                $score = 100 - (($levscore / $scoreBasis)*100);
-                $permalinks[$id . "|POST"] = number_format($score,4,'.','');
-        }
+				$query = "select id from $wpdb->posts where post_status='publish' and (post_type='page' or post_type='post')";
+				$rows = $wpdb->get_results($query);
+				foreach ($rows as $row) {
+								$id = $row->id;
+								$the_permalink = get_permalink($id);
+								$urlParts = parse_url($the_permalink);
+								$scoreBasis = strlen($urlParts['path']);
+								$levscore = levenshtein($url, $urlParts['path'],1,1,1);
+								$score = 100 - (($levscore / $scoreBasis)*100);
+								$permalinks[$id . "|POST"] = number_format($score,4,'.','');
+				}
 
-        if ($includeTags == "1") {
-                $query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
-                $query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
-                $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='post_tag' and " . $wpdb->term_taxonomy . ".count >= 1";
-                $rows = $wpdb->get_results($query);
-                foreach ($rows as $row) {
-                        $id = $row->term_id;
-                        $the_permalink = get_tag_link($id);
-                        $urlParts = parse_url($the_permalink);
-                        $scoreBasis = strlen($urlParts['path']);
-                        $levscore = levenshtein($url, $urlParts['path'],1,1,1);
-                        $score = 100 - (($levscore / $scoreBasis)*100);
-                        $permalinks[$id . "|TAG"] = number_format($score,4,'.','');
-                }
-        }
+				if ($includeTags == "1") {
+								$query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
+								$query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
+								$query .= "where " . $wpdb->term_taxonomy . ".taxonomy='post_tag' and " . $wpdb->term_taxonomy . ".count >= 1";
+								$rows = $wpdb->get_results($query);
+								foreach ($rows as $row) {
+												$id = $row->term_id;
+												$the_permalink = get_tag_link($id);
+												$urlParts = parse_url($the_permalink);
+												$scoreBasis = strlen($urlParts['path']);
+												$levscore = levenshtein($url, $urlParts['path'],1,1,1);
+												$score = 100 - (($levscore / $scoreBasis)*100);
+												$permalinks[$id . "|TAG"] = number_format($score,4,'.','');
+								}
+				}
 
-        if ($includeCats == "1") {
-                $query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
-                $query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
-                $query .= "where " . $wpdb->term_taxonomy . ".taxonomy='category' and " . $wpdb->term_taxonomy . ".count >= 1";
-                $rows = $wpdb->get_results($query);
-                foreach ($rows as $row) {
-                        $id = $row->term_id;
-                        $the_permalink = get_category_link($id);
-                        $urlParts = parse_url($the_permalink);
-                        $scoreBasis = strlen($urlParts['path']);
-                        $levscore = levenshtein($url, $urlParts['path'],1,1,1);
-                        $score = 100 - (($levscore / $scoreBasis)*100);
-                        $permalinks[$id . "|CAT"] = number_format($score,4,'.','');
-                }
-        }
+				if ($includeCats == "1") {
+								$query = "select " . $wpdb->terms . ".term_id from " . $wpdb->terms . " ";
+								$query .= "left outer join " . $wpdb->term_taxonomy . " on " . $wpdb->terms . ".term_id = " . $wpdb->term_taxonomy . ".term_id ";
+								$query .= "where " . $wpdb->term_taxonomy . ".taxonomy='category' and " . $wpdb->term_taxonomy . ".count >= 1";
+								$rows = $wpdb->get_results($query);
+								foreach ($rows as $row) {
+												$id = $row->term_id;
+												$the_permalink = get_category_link($id);
+												$urlParts = parse_url($the_permalink);
+												$scoreBasis = strlen($urlParts['path']);
+												$levscore = levenshtein($url, $urlParts['path'],1,1,1);
+												$score = 100 - (($levscore / $scoreBasis)*100);
+												$permalinks[$id . "|CAT"] = number_format($score,4,'.','');
+								}
+				}
 
-        arsort($permalinks);
-        return $permalinks;
+				arsort($permalinks);
+				return $permalinks;
 }
 
 function wbz404_permalinkInfo($k, $v) {
 	$permalink = array();
 
 	$meta = $k;
-        $meta = explode("|",$meta);
+				$meta = explode("|",$meta);
 
-        $permalink['id'] = $meta[0];
-        $permalink['type'] = $meta[1];
-        $permalink['score'] = $v;
+				$permalink['id'] = $meta[0];
+				$permalink['type'] = $meta[1];
+				$permalink['score'] = $v;
 
 	if ($permalink['type'] == "POST") {
 		$permalink['link'] = get_permalink($permalink['id']);
@@ -289,25 +289,25 @@ function wbz404_permalinkInfo($k, $v) {
 
 
 function wbz404_loadRedirectData($url) {
-        global $wpdb;
-        $redirect = array();
+				global $wpdb;
+				$redirect = array();
 
-        $query="select * from " . $wpdb->prefix . "wbz404_redirects where url = '" . esc_sql($url) . "'";
+				$query="select * from " . $wpdb->prefix . "wbz404_redirects where url = '" . esc_sql($url) . "'";
 
-        $row = $wpdb->get_row($query, ARRAY_A);
-        if ($row == NULL) {
-                $redirect['id']=0;
-        } else {
-                $redirect['id'] = $row['id'];
-                $redirect['url'] = $row['url'];
-                $redirect['status'] = $row['status'];
-                $redirect['type'] = $row['type'];
-                $redirect['final_dest'] = $row['final_dest'];
+				$row = $wpdb->get_row($query, ARRAY_A);
+				if ($row == NULL) {
+								$redirect['id']=0;
+				} else {
+								$redirect['id'] = $row['id'];
+								$redirect['url'] = $row['url'];
+								$redirect['status'] = $row['status'];
+								$redirect['type'] = $row['type'];
+								$redirect['final_dest'] = $row['final_dest'];
 		$redirect['code'] = $row['code'];
 		$redirect['disabled'] = $row['disabled'];
-                $redirect['created'] = $row['timestamp'];
-        }
-        return $redirect;
+								$redirect['created'] = $row['timestamp'];
+				}
+				return $redirect;
 }
 
 function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disabled = 0) {
@@ -480,36 +480,36 @@ function wbz404_removeDuplicatesCron() {
 
 function wbz404_SortQuery($urlParts) {
 	$url = "";
-        if (isset($urlParts['query']) && $urlParts['query'] != "") {
-                $queryString = array();
-                $urlQuery = $urlParts['query'];
-                $queryParts = preg_split("/[;&]/", $urlQuery);
-                foreach ($queryParts as $query) {
-                        if (strpos($query, "=") === false) {
-                                $queryString[$query]='';
-                        } else {
-                                $stringParts = preg_split("/=/", $query);
-                                $queryString[$stringParts[0]]=$stringParts[1];
-                        }
-                }
-                ksort($queryString);
-                $x=0;
-                $newQS = "";
-                foreach ($queryString as $key => $value) {
-                        if ($x != 0) {
-                                $newQS .= "&";
-                        }
-                        $newQS .= $key;
-                        if ($value != "") {
-                                $newQS .= "=" . $value;
-                        }
-                        $x++;
-                }
+				if (isset($urlParts['query']) && $urlParts['query'] != "") {
+								$queryString = array();
+								$urlQuery = $urlParts['query'];
+								$queryParts = preg_split("/[;&]/", $urlQuery);
+								foreach ($queryParts as $query) {
+												if (strpos($query, "=") === false) {
+																$queryString[$query]='';
+												} else {
+																$stringParts = preg_split("/=/", $query);
+																$queryString[$stringParts[0]]=$stringParts[1];
+												}
+								}
+								ksort($queryString);
+								$x=0;
+								$newQS = "";
+								foreach ($queryString as $key => $value) {
+												if ($x != 0) {
+																$newQS .= "&";
+												}
+												$newQS .= $key;
+												if ($value != "") {
+																$newQS .= "=" . $value;
+												}
+												$x++;
+								}
 
-                if ($newQS != "") {
-                	$url .= "?" . $newQS;
-                }
-        }
+								if ($newQS != "") {
+									$url .= "?" . $newQS;
+								}
+				}
 	return $url;
 }
 
@@ -543,53 +543,52 @@ function wbz404_ProcessRedirect($redirect) {
 	}
 }
 
-
 function wbz404_isIPIgnored(){
-  global $wpdb;
-  $ip = esc_sql( wbz404_get_ip_address() );
-  $query = "SELECT IP_address FROM `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` where IP_address = '".$ip."' LIMIT 1";
-  $result = $wpdb->get_results($query);
-  if(count($result) == 1){
-    return true;
-  }
+	global $wpdb;
+	$ip = esc_sql( wbz404_get_ip_address() );
+	$query = "SELECT IP_address FROM `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` where IP_address = '".$ip."' LIMIT 1";
+	$result = $wpdb->get_results($query);
+	if(count($result) == 1){
+		return true;
+	}
 }
 
 function wbz404_isUserAgentIgnored(){
-  global $wpdb;
-  $user_agent = esc_sql( $_SERVER['HTTP_USER_AGENT'] );
-  $query = "SELECT user_agent FROM `" . $wpdb->prefix . "wbz404_ignored_bots` where user_agent = '".$user_agent."' LIMIT 1";
-  $result = $wpdb->get_results($query);
-  if(count($result) == 1){
-    return true;
-  }
+	global $wpdb;
+	$user_agent = esc_sql( $_SERVER['HTTP_USER_AGENT'] );
+	$query = "SELECT user_agent FROM `" . $wpdb->prefix . "wbz404_ignored_bots` where user_agent = '".$user_agent."' LIMIT 1";
+	$result = $wpdb->get_results($query);
+	if(count($result) == 1){
+		return true;
+	}
 }
 
 function wbz404_get_ip_address() {
-  # check for shared internet/ISP IP
-  if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-    return $_SERVER['HTTP_CLIENT_IP'];
-  }
+	# check for shared internet/ISP IP
+	if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+		return $_SERVER['HTTP_CLIENT_IP'];
+	}
 
-  # check for IPs passing through proxies
-  if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    # check if multiple ips exist in var
-    if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',') !== false) {
-      $iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-      return $iplist[0];
-    }
-    else{
-      return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }
-  }
-  if(!empty($_SERVER['HTTP_X_FORWARDED']))
-    return $_SERVER['HTTP_X_FORWARDED'];
-  if(!empty($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
-    return $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
-  if(!empty($_SERVER['HTTP_FORWARDED_FOR']))
-    return $_SERVER['HTTP_FORWARDED_FOR'];
-  if(!empty($_SERVER['HTTP_FORWARDED']))
-    return $_SERVER['HTTP_FORWARDED'];
+	# check for IPs passing through proxies
+	if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+		# check if multiple ips exist in var
+		if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',') !== false) {
+			$iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+			return $iplist[0];
+		}
+		else{
+			return $_SERVER['HTTP_X_FORWARDED_FOR'];
+		}
+	}
+	if(!empty($_SERVER['HTTP_X_FORWARDED']))
+		return $_SERVER['HTTP_X_FORWARDED'];
+	if(!empty($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+		return $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+	if(!empty($_SERVER['HTTP_FORWARDED_FOR']))
+		return $_SERVER['HTTP_FORWARDED_FOR'];
+	if(!empty($_SERVER['HTTP_FORWARDED']))
+		return $_SERVER['HTTP_FORWARDED'];
 
-  # return REMOTE_ADDR since all else failed
-  return $_SERVER['REMOTE_ADDR'];
+	# return REMOTE_ADDR since all else failed
+	return $_SERVER['REMOTE_ADDR'];
 }
