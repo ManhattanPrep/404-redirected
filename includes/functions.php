@@ -150,6 +150,22 @@ function wbz404_pluginActivation() {
 	) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin Logs Table' AUTO_INCREMENT=1";
 	$wpdb->query($query);
 
+  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` (
+    `ID` bigint(40) NOT NULL auto_increment,
+    `IP_address` varchar(255) NOT NULL,
+    PRIMARY KEY  (`ID`),
+    KEY `IP_address` (`IP_address`)
+  ) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP addresses' AUTO_INCREMENT=1";
+  $wpdb->query($query);
+
+  $query = "CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . "wbz404_ignored_bots` (
+    `ID` bigint(40) NOT NULL auto_increment,
+    `user_agent` varchar(255) NOT NULL,
+    PRIMARY KEY  (`ID`),
+    KEY `user_agent` (`user_agent`)
+  ) ENGINE=MyISAM " . $charset_collate . " COMMENT='404 Redirected Plugin ignored IP bots' AUTO_INCREMENT=1";
+  $wpdb->query($query);
+
 	wbz404_registerCrons();
 
 	$options = wbz404_updateDBVersion();
@@ -164,7 +180,7 @@ function wbz404_registerCrons() {
 	$timestamp = wp_next_scheduled('wbz404_duplicateCronAction');
 	if ($timestamp == False) {
 		wp_schedule_event(current_time( 'timestamp' ) - 3600, 'hourly', 'wbz404_duplicateCronAction');
-	}	
+	}
 }
 
 function wbz404_unregisterCrons() {
@@ -298,7 +314,7 @@ function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
 	global $wpdb;
 
 	$now = time();
-	$wpdb->insert($wpdb->prefix . 'wbz404_redirects', 
+	$wpdb->insert($wpdb->prefix . 'wbz404_redirects',
 		array(
 			'url' => $url,
 			'status' => $status,
@@ -318,7 +334,7 @@ function wbz404_setupRedirect($url, $status, $type, $final_dest, $code, $disable
 			'%d'
 		)
 	);
-	return $wpdb->insert_id;	
+	return $wpdb->insert_id;
 }
 
 function wbz404_logRedirectHit($id, $action) {
@@ -329,7 +345,7 @@ function wbz404_logRedirectHit($id, $action) {
 		$referer=$_SERVER['HTTP_REFERER'];
 	} else {
 		$referer = "";
-	}	
+	}
 
 	$wpdb->insert($wpdb->prefix . "wbz404_logs",
 		array(
@@ -439,17 +455,17 @@ function wbz404_removeDuplicatesCron() {
 
 	$rtable = $wpdb->prefix . "wbz404_redirects";
 	$ltable = $wpdb->prefix . "wbz404_logs";
-	
+
 	$query = "SELECT COUNT(id) as repetitions, url FROM " . $rtable . " GROUP BY url HAVING repetitions > 1";
 	$rows = $wpdb->get_results($query, ARRAY_A);
 	foreach ($rows as $row) {
 		$url = $row['url'];
-		
+
 		$query2 = "select id from " . $rtable . " where url = '" . esc_sql($url) . "' order by id limit 0,1";
 		$orig = $wpdb->get_row($query2, ARRAY_A, 0);
 		if ($orig['id'] != 0) {
 			$original = $orig['id'];
-			
+
 			//Fix the logs table
 			$query2 = "update " . $ltable . " set redirect_id = " . esc_sql($original) . " where redirect_id in (select id from " . $rtable . " where url = '" . esc_sql($url) . "' and id != " . esc_sql($original) . ")";
 			$wpdb->query($query2);
@@ -527,3 +543,53 @@ function wbz404_ProcessRedirect($redirect) {
 	}
 }
 
+
+function wbz404_isIPIgnored(){
+  global $wpdb;
+  $ip = esc_sql( wbz404_get_ip_address() );
+  $query = "SELECT IP_address FROM `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` where IP_address = '".$ip."' LIMIT 1";
+  $result = $wpdb->get_results($query);
+  if(count($result) == 1){
+    return true;
+  }
+}
+
+function wbz404_isUserAgentIgnored(){
+  global $wpdb;
+  $user_agent = esc_sql( $_SERVER['HTTP_USER_AGENT'] );
+  $query = "SELECT user_agent FROM `" . $wpdb->prefix . "wbz404_ignored_bots` where user_agent = '".$user_agent."' LIMIT 1";
+  $result = $wpdb->get_results($query);
+  if(count($result) == 1){
+    return true;
+  }
+}
+
+function wbz404_get_ip_address() {
+  # check for shared internet/ISP IP
+  if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+    return $_SERVER['HTTP_CLIENT_IP'];
+  }
+
+  # check for IPs passing through proxies
+  if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    # check if multiple ips exist in var
+    if (strpos($_SERVER['HTTP_X_FORWARDED_FOR'], ',') !== false) {
+      $iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+      return $iplist[0];
+    }
+    else{
+      return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+  }
+  if(!empty($_SERVER['HTTP_X_FORWARDED']))
+    return $_SERVER['HTTP_X_FORWARDED'];
+  if(!empty($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+    return $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+  if(!empty($_SERVER['HTTP_FORWARDED_FOR']))
+    return $_SERVER['HTTP_FORWARDED_FOR'];
+  if(!empty($_SERVER['HTTP_FORWARDED']))
+    return $_SERVER['HTTP_FORWARDED'];
+
+  # return REMOTE_ADDR since all else failed
+  return $_SERVER['REMOTE_ADDR'];
+}

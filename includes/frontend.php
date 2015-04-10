@@ -43,7 +43,7 @@ function wbz404_suggestions() {
 				} else {
 					echo $options['suggest_noresults'];
 				}
-	
+
 				//Promote Plugin
 				if ($options['404_promote'] == "1") {
 					echo wbz404_trans('Generated using the') . " <a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('Wordpress 404 Manager Plugin') . "\" target=\"_blank\">";
@@ -55,7 +55,15 @@ function wbz404_suggestions() {
 }
 
 function wbz404_process404() {
+	# wbz404_get_ip_address();
 	$options = wbz404_getOptions();
+
+	if( wbz404_isIPIgnored() ){
+		return false;
+	}
+	if( wbz404_isUserAgentIgnored() ){
+		return false;
+	}
 
 	$urlRequest = $_SERVER['REQUEST_URI'];
 	$urlParts = parse_url($urlRequest);
@@ -82,7 +90,7 @@ function wbz404_process404() {
 
 					if ($permalink['score'] >= $minScore) {
 						$found = 1;
-						break;		
+						break;
 					} else {
 						//Score not high enough
 						break;
@@ -118,7 +126,7 @@ function wbz404_process404() {
 			}
 		}
 	} else {
-		if (is_single() || is_page()) {	
+		if (is_single() || is_page()) {
 			if (!is_feed() && !is_trackback() && !is_preview()) {
 				$theID = get_the_ID();
 				$permalink = wbz404_permalinkInfo($theID . "|POST", 0);
@@ -176,12 +184,12 @@ function wbz404_redirectCanonical($redirect, $request) {
 
 			$urlRequest = $_SERVER['REQUEST_URI'];
 			$urlParts = parse_url($urlRequest);
-			
+
 			$requestedURL = $urlParts['path'];
 			$requestedURL .= wbz404_SortQuery($urlParts);
 
 		        #//Get URL data if it's already in our database
-		        $data = wbz404_loadRedirectData($requestedURL);	
+		        $data = wbz404_loadRedirectData($requestedURL);
 
 			if ($data['id'] != '0') {
 				wbz404_ProcessRedirect($data);

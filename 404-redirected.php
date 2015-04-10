@@ -1,12 +1,15 @@
 <?php
 /*
-Plugin Name: 404 Redirected
+Plugin Name: 404 Redirected - Manhattan Prep Fork
 Plugin URI: http://www.weberz.com/plugins/404-redirected/
-Description: A smart 404 redirection plugin that provides the ability to log incoming 404 URLs in real time, automatically redirect visitors to most relevant content, and provides page suggestions when relevant content can not be found. Admins can also manually add redirects to system and control automatic deletion of old redirects when they are no longer being used.
-Version: 1.3.2
-Author: Weberz Hosting
-Author URI: http://www.weberz.com
-License: GPLv2
+Original URI: https://github.com/ManhattanPrep/404-redirected
+Description: Improvements and modifications made to weberz's (rrolfe) 404 Redirected Plugin.
+Version: 1.4 Forked @ 1.3.2
+Author: Manhattan Prep
+Author URI: http://www.manhattanprep.com
+Original Plugin URI: http://www.weberz.com/plugins/404-redirected/
+Original Author: Weberz Hosting
+Original Author URI: http://www.weberz.com
 
 Copyright 2009  Weberz Hosting  (email: rob@weberz.com)
 
