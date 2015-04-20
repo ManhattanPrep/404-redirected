@@ -169,6 +169,12 @@ function wbz404_pluginActivation(){
   $query = "ALTER TABLE `" . $wpdb->prefix . "wbz404_logs` ADD `user_agent` VARCHAR(255) NOT NULL";
   $wpdb->query($query);
 
+  $query = "ALTER TABLE `" . $wpdb->prefix . "wbz404_ignored_IP_addresses`  ADD `date_added` VARCHAR(255) NOT NULL";
+  $wpdb->query($query);
+
+  $query = "ALTER TABLE `" . $wpdb->prefix . "wbz404_ignored_bots`  ADD `date_added` VARCHAR(255) NOT NULL";
+  $wpdb->query($query);
+
   wbz404_registerCrons();
 
   $options = wbz404_updateDBVersion();
@@ -601,4 +607,105 @@ function wbz404_clear_unassigned_links_from_log(){
   $wpdb->query($query);
   $query = "DELETE FROM " . $wpdb->prefix . "wbz404_redirects where final_dest = '0'";
   $wpdb->query($query);
+}
+
+function wbz404_generate_blacklist_link($target, $type){
+  $url = '?page=wbz404_redirected&subpage=wbz404_blacklist';
+  $action = '';
+  switch ($type) {
+    case 'ip':
+      $action = 'wbz404_blacklist';
+      $target = '&amp;type=ip&amp;target=' . $target;
+      break;
+    case 'user_agent':
+      $action = 'wbz404_blacklist';
+      $target = '&amp;type=user_agent&amp;target=' . $target;
+      break;
+  }
+  if($action != ''){
+    $nonce= wp_create_nonce ('wbz404_blacklist');
+    return $url.$target."&amp;_wpnonce=".$nonce;
+  }
+}
+
+function wbz404_blacklist (){
+  global $wpdb;
+  $target = $_REQUEST['target'];
+  $type = $_REQUEST['type'];
+
+  $nonce = $_REQUEST['_wpnonce'];
+  if (wp_verify_nonce( $nonce, 'wbz404_blacklist' ) && ($type == 'ip' || $type == 'user_agent')) {
+
+  if ( $type == 'user_agent' ){
+    $qry_get = "SELECT user_agent, count(*) as hits
+                FROM `" . $wpdb->prefix . "wbz404_logs`
+                WHERE user_agent = '".esc_sql($target)."'
+                GROUP BY user_agent
+                ORDER BY hits DESC
+                LIMIT 1";
+    $qry_purge = "DELETE FROM `" . $wpdb->prefix . "wbz404_logs` WHERE user_agent = '".esc_sql($target)."'";
+  } else if ( $type == 'ip' ) {
+    $qry_get = "SELECT remote_host, count(*) as hits
+                FROM `" . $wpdb->prefix . "wbz404_logs`
+                WHERE remote_host = '".esc_sql($target)."'
+                GROUP BY user_agent
+                ORDER BY hits DESC
+                LIMIT 1";
+    $qry_purge = "DELETE FROM `" . $wpdb->prefix . "wbz404_logs` WHERE remote_host = '".esc_sql($target)."'";
+  }
+
+  $results = $wpdb->get_results($qry_get, ARRAY_A);
+
+  if(!empty($results)){
+    if ( $type == 'user_agent' ){
+      $query = "INSERT INTO `".$wpdb->prefix."wbz404_ignored_bots` (`user_agent`, `date_added`) VALUES ('".esc_sql($target)."', '".date('U')."')";
+      $wpdb->query($query);
+      $wpdb->query($qry_purge);
+    } else if ( $type == 'ip' ) {
+      $query = "INSERT INTO `".$wpdb->prefix."wbz404_ignored_IP_addresses` (`IP_address`, `date_added`) VALUES ('".esc_sql($target)."', '".date('U')."')";
+      $wpdb->query($query);
+      $wpdb->query($qry_purge);
+    }
+    echo '<h3> Blacklist rule added for '.$target.'</h3>';
+  }
+ }
+
+}
+
+function wbz404_generate_clear_blacklist_link($target, $type){
+  $url = '?page=wbz404_redirected&subpage=wbz404_remove_from_blacklist';
+  $action = '';
+  switch ($type) {
+    case 'ip':
+      $action = 'wbz404_remove_from_blacklist';
+      $target = '&amp;type=ip&amp;target=' . $target;
+      break;
+    case 'user_agent':
+      $action = 'wbz404_remove_from_blacklist';
+      $target = '&amp;type=user_agent&amp;target=' . $target;
+      break;
+  }
+  if($action != ''){
+    $nonce= wp_create_nonce  ('wbz404_remove_from_blacklist');
+    return $url.$target."&amp;_wpnonce=".$nonce;
+  }
+}
+
+function wbz404_remove_from_blacklist (){
+  global $wpdb;
+  $target = $_REQUEST['target'];
+  $type = $_REQUEST['type'];
+
+  $nonce = $_REQUEST['_wpnonce'];
+  if (wp_verify_nonce( $nonce, 'wbz404_remove_from_blacklist' ) && ($type == 'ip' || $type == 'user_agent')) {
+    if ( $type == 'user_agent' ){
+      $qry_purge = "DELETE FROM `" . $wpdb->prefix . "wbz404_ignored_bots` WHERE user_agent = '".esc_sql($target)."'";
+    } else if ( $type == 'ip' ) {
+      $qry_purge = "DELETE FROM `" . $wpdb->prefix . "wbz404_ignored_IP_addresses` WHERE IP_address = '".esc_sql($target)."'";
+    }
+    $wpdb->query($qry_purge);
+
+    echo '<h3> Blacklist rule removed for '.$target.'</h3>';
+
+  }
 }

@@ -3,10 +3,9 @@
  * 404 Manager Admin Functions
  *
 */
-
 function wbz404_addAdminPage() {
   global $menu;
-        if (function_exists('add_options_page')) {
+  if (function_exists('add_options_page')) {
     $options = wbz404_getOptions();
     $pageName = "404 Redirected";
     if ($options['admin_notification'] != '0') {
@@ -19,8 +18,8 @@ function wbz404_addAdminPage() {
         }
       }
     }
-                add_options_page('404 Redirected', $pageName, 'manage_options', 'wbz404_redirected', 'wbz404_adminPage');
-        }
+    add_options_page('404 Redirected', $pageName, 'manage_options', 'wbz404_redirected', 'wbz404_adminPage');
+  }
 }
 
 add_action('admin_menu', 'wbz404_addAdminPage');
@@ -819,24 +818,16 @@ function wbz404_adminHeader($sub = 'list', $message = '') {
   }
   echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_tools\" title=\"" . wbz404_trans('Tools') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Tools') . "</a>";
   $class="";
+  if ($sub == "manage_blacklist") {
+    $class="nav-tab-active";
+  }
+  echo "<a href=\"?page=wbz404_redirected&subpage=manage_blacklist\" title=\"" . wbz404_trans('Blacklist') . "\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Blacklist') . "</a>";
+  $class="";
   if ($sub == "options") {
     $class="nav-tab-active";
   }
   echo "<a href=\"?page=wbz404_redirected&subpage=wbz404_options\" title=\"Options\" class=\"nav-tab " . $class . "\">" . wbz404_trans('Options') . "</a>";
   echo "<hr style=\"border: 0px; border-bottom: 1px solid #DFDFDF; margin-top: 0px; margin-bottom: 0px; \">";
-}
-
-function wbz404_adminFooter() {
-  echo "<div style=\"clear: both;\">";
-    echo "<br>";
-    echo "<strong>Credits:</strong><br>";
-    echo "<a href=\"" . WBZ404_HOME . "\" title=\"" . wbz404_trans('404 Redirected') . "\" target=\"_blank\">" . wbz404_trans('404 Redirected') . "</a> ";
-    echo wbz404_trans('was designed by');
-    echo " ";
-    echo "<a href=\"http://twitter.com/rrolfe/\" title=\"Robert Rolfe\" target=\"_blank\">Robert Rolfe</a>. ";
-    echo wbz404_trans('It\'s released under the GNU GPL version 2 License.');
-  echo "</div>";
-  echo "</div>";
 }
 
 function wbz404_emptyTrash($sub) {
@@ -1038,6 +1029,12 @@ function wbz404_adminPage() {
     $sub = "stats";
   } else if ($sub == "wbz404_tools") {
     $sub = "tools";
+  } else if ($sub == "wbz404_blacklist") {
+    $sub = "blacklist";
+  } else if ($sub == "manage_blacklist") {
+    $sub = "manage_blacklist";
+  } else if ($sub == "wbz404_remove_from_blacklist") {
+    $sub = "remove_from_blacklist";
   } else {
     $sub = "redirects";
   }
@@ -1057,10 +1054,16 @@ function wbz404_adminPage() {
     wbz404_adminStatsPage();
   } else if ($sub == "tools") {
     wbz404_adminToolsPage();
+  } else if ($sub == "blacklist") {
+    wbz404_blacklist();
+  } else if ($sub == "manage_blacklist") {
+    wbz404_manage_blacklist();
+  } else if ($sub == "remove_from_blacklist") {
+    wbz404_remove_from_blacklist();
   } else {
     echo wbz404_trans('Invalid Sub Page ID');
   }
-  wbz404_adminFooter();
+
 }
 
 function wbz404_getStatsCount($query='') {
@@ -2009,120 +2012,25 @@ function wbz404_adminEditPage() {
   $redirect = $wpdb->get_row($query, ARRAY_A);
 
   if (! ($redirect == null)) {
-    echo "<h3>" . wbz404_trans('Redirect Details') . "</h3>";
-
-    $url = "?page=wbz404_redirected&subpage=wbz404_edit";
-
-    $action = "wbz404editRedirect";
-          $link = wp_nonce_url($url, $action);
-
-    echo "<form method=\"POST\" action=\"" . $link . "\">";
-    echo "<input type=\"hidden\" name=\"action\" value=\"editRedirect\">";
-    echo "<input type=\"hidden\" name=\"id\" value=\"" . $redirect['id'] . "\">";
-    echo "<strong><label for=\"url\">" . wbz404_trans('URL') . ":</label></strong> <input id=\"url\" style=\"width: 200px;\" type=\"text\" name=\"url\" value=\"" . $redirect['url'] . "\"> (" . wbz404_trans('Required') . ")<br>";
-    echo "<strong><label for=\"dest\">" . wbz404_trans('Redirect to') . ":</strong> <select id=\"dest\" name=\"dest\">";
-      $selected = "";
-      if ($redirect['type'] == WBZ404_EXTERNAL) {
-        $selected = " selected";
-      }
-      echo "<option value=\"" . WBZ404_EXTERNAL . "\"" . $selected . ">" . wbz404_trans('External Page') . "</options>";
-
-      $query = "select id from $wpdb->posts where post_status='publish' and post_type='post' order by post_date desc";
-      $rows = $wpdb->get_results($query);
-      foreach ($rows as $row) {
-        $id = $row->id;
-        $theTitle = get_the_title($id);
-        $thisval = $id . "|" . WBZ404_POST;
-
-        $selected = "";
-        if ($redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id) {
-          $selected = " selected";
-        }
-        echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Post') . ": " . $theTitle . "</option>";
-      }
-
-      $rows = get_pages();
-      foreach ($rows as $row) {
-        $id = $row->ID;
-        $theTitle = $row->post_title;
-        $thisval = $id . "|" . WBZ404_POST;
-
-        $parent = $row->post_parent;
-        while ($parent != 0) {
-          $query = "select id, post_parent from $wpdb->posts where post_status='publish' and post_type='page' and id = $parent";
-          $prow = $wpdb->get_row($query, OBJECT);
-          if (! ($prow == NULL)) {
-            $theTitle = get_the_title($prow->id) . " &raquo; " . $theTitle;
-            $parent = $prow->post_parent;
-          } else {
-            break;
-          }
-        }
-
-        $selected = "";
-        if ($redirect['type'] == WBZ404_POST && $redirect['final_dest'] == $id) {
-          $selected = " selected";
-        }
-        echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Page') . ": " . $theTitle . "</option>\n";
-      }
-
-      $cats = get_categories('hierarchical=0');
-      foreach ($cats as $cat) {
-        $id = $cat->term_id;
-        $theTitle = $cat->name;
-        $thisval = $id . "|" . WBZ404_CAT;
-
-        $selected = "";
-        if ($redirect['type'] == WBZ404_CAT && $redirect['final_dest'] == $id) {
-          $selected = " selected";
-        }
-        echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Category') . ": " . $theTitle . "</option>";
-      }
-
-      $tags = get_tags('hierarchical=0');
-      foreach ($tags as $tag) {
-        $id = $tag->term_id;
-        $theTitle = $tag->name;
-        $thisval = $id . "|" . WBZ404_TAG;
-
-        $selected = "";
-        if ($redirect['type'] == WBZ404_TAG && $redirect['final_dest'] == $id) {
-          $selected = " selected";
-        }
-        echo "<option value=\"" . $thisval . "\"" . $selected . ">" . wbz404_trans('Tag') . ": " . $theTitle . "</option>";
-      }
-
-    echo "</select><br>";
-    $final = "";
-    if ($redirect['type'] == WBZ404_EXTERNAL) {
-      $final = $redirect['final_dest'];
-    }
-    echo "<strong><label for=\"external\">" . wbz404_trans('External URL') . ":</label></strong> <input id=\"external\" style=\"width: 200px;\" type=\"text\" name=\"external\" value=\"" . $final . "\"> (" . wbz404_trans('Required if Redirect to is set to External Page') . ")<br>";
-    echo "<strong><label for=\"code\">" . wbz404_trans('Redirect Type') . ":</label></strong> <select id=\"code\" name=\"code\">";
-      if ($redirect['code'] == "") {
-        $codeselected = $options['default_redirect'];
-      } else {
-        $codeselected = $redirect['code'];
-      }
-      $codes = array(301,302);
-      foreach ($codes as $code) {
-        $selected = "";
-        if ($code == $codeselected) {
-          $selected = " selected";
-        }
-        if ($code == 301) {
-          $title = wbz404_trans('301 Permanent Redirect');
-        } else {
-          $title = wbz404_trans('302 Temporary Redirect');
-        }
-        echo "<option value=\"" . $code . "\"" . $selected . ">" . $title . "</option>";
-      }
-    echo "</select><br>";
-    echo "<input type=\"submit\" value=\"" . wbz404_trans('Update Redirect') . "\" class=\"button-secondary\">";
-    echo "</form>";
-  } else {
+    echo '<h3>Redirect Details</h3>';
+    require_once(WBZ404_PATH.'includes/partials/redirect_details.php');
+    echo '<div class="row">';
+      require_once(WBZ404_PATH.'includes/partials/redirect_log_user_agents.php');
+      require_once(WBZ404_PATH.'includes/partials/redirect_log_ips.php');
+    echo '</div>';
+  }
+  else{
     echo "Error: Invalid ID Number!";
   }
+}
+
+function wbz404_manage_blacklist(){
+  global $wpdb;
+  echo '<h3>Remove Blacklist Entries</h3>';
+  echo '<div class="row">';
+    require_once(WBZ404_PATH.'includes/partials/manage_blacklist_user_agent.php');
+    require_once(WBZ404_PATH.'includes/partials/manage_blacklist_ip.php');
+  echo '</div>';
 }
 
 function wbz404_AdminToolsPage() {

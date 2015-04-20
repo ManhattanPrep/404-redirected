@@ -1,0 +1,10 @@
+.row{ padding:1em;}
+.column-hits{text-align: center; width: 80px;}
+.column-blacklist{text-align: center; width: 80px;}
+.column-date-added{text-align: right; width: 180px;}
+.redirected_half_box{
+  width: 50%;
+  display: block;
+  float: left;
+}
+
