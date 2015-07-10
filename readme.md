@@ -1,7 +1,8 @@
-=== 404 Redirected ===
+![Manhattan Prep Logo](https://avatars3.githubusercontent.com/u/4862482?v=3&s=200)
+# 404 Redirected 
 Contributors: Manhattan Prep fork of weberz's (rrolfe) redirected plugin
 
-== Description ==
+## Description
 
 **Features added with this Fork:**
 
@@ -16,8 +17,8 @@ Contributors: Manhattan Prep fork of weberz's (rrolfe) redirected plugin
 
 For documentation and a description of the pre-fork features see https://github.com/gpspake/404-redirected
 
-== Changelog ==
+## Changelog 
 
-= Manhattan Prep Fork @ Version 1.3.2  =
+** Manhattan Prep Fork @ Version 1.3.2**
 
 
