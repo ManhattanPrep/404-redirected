@@ -19,6 +19,6 @@ For documentation and a description of the pre-fork features see https://github.
 
 ## Changelog 
 
-** Manhattan Prep Fork @ Version 1.3.2**
+**Manhattan Prep Fork @ Version 1.3.2**
 
 
