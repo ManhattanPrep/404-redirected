@@ -3,13 +3,16 @@ Contributors: Manhattan Prep fork of weberz's (rrolfe) redirected plugin
 
 == Description ==
 
-**Features (to be) added in this Fork:**
+**Features added with this Fork:**
 
 * IP Address Ignore List
 * Bot/Spider Ignore List (by user agent)
-* 404 Log Sort defaults to DESC
-* Action to purge unassigned 404's from the Logs.
-* Search feature for 404 Log
+* 404 Log (Captured 404 URLs) sort defaults to DESC by hits
+* Ability to purge unassigned 404's from the Logs.
+
+**Features planned for this Fork:**
+
+* Ability to Search Captured 404 URLs
 
 For documentation and a description of the pre-fork features see https://github.com/gpspake/404-redirected
 
